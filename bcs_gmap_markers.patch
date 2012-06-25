@@ -1,0 +1,125 @@
+From 04333cfe1daaab63ce3da029d00fd3f191fe18d4 Mon Sep 17 00:00:00 2001
+From: James Silver <jamsilver@gmail.com>
+Date: Mon, 25 Jun 2012 14:42:56 +0100
+Subject: [PATCH] CM Issue #10475: Add custom marker
+
+---
+ markers/bcs.ini |   16 ++++++++++++++++
+ markers/bcs.png |  Bin 0 -> 4065 bytes
+ 2 files changed, 16 insertions(+), 0 deletions(-)
+ create mode 100644 markers/bcs.ini
+ create mode 100644 markers/bcs.png
+
+diff --git a/markers/bcs.ini b/markers/bcs.ini
+new file mode 100644
+index 0000000..1769749
+--- /dev/null
++++ b/markers/bcs.ini
+@@ -0,0 +1,16 @@
++; Defaults
++[defaults]
++; Note: An empty shadow property will break IE.
++; Leave it commented out if you aren't supplying an image.
++;shadow = ""
++anchorX = 10
++anchorY = 29
++infoX = 17
++infoY = 3
++
++; Marker sets
++[bcs]
++name = "BCS"
++sequence = "bcs.png"
++
++; Files
+diff --git a/markers/bcs.png b/markers/bcs.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea57fd01a73b6a68e35cd4feba6a1e1b739c22e4
+GIT binary patch
+literal 4065
+zcmV<74<7J|P)<h;3K|Lk000e1NJLTq000*N000{Z1^@s6m*^DR00009a7bBm000XU
+z000XU0RWnu7ytkYPiaF#P*7-ZbZ>KLZ*U+<Lqi~Na&Km7Y-Iodc-oy)XH-+^7Crag
+z^g>IBfRsybQWXdwQbLP>6p<z>Aqfylh#{fb6;Z(vMMVS~$e@S=j*ftg6;Uh<iVD~V
+z<RPMtgQJLw%KPDaqifc@_vX$1wbwr9tn;0-&j-K=43<bUQ8j=JsX`tR;Dg7+#^K~H
+zK!FM*Z~zbpvt%K2{UZSY_<lS*D<Z%Lz5oGu(+dayz)hRLFdT>f59&ghTmgWD0l;*T
+zI7<kC6aYYajzXpYKt=(8otP$50H6c_V9R4-;{Z@C0AMG7=F<Rxo%or10RUT+Ar%3j
+zkpLhQWr#!oXgdI`&sK^>09Y^p6lP1rIRMx#05C~cW=H_Aw*bJ-5DT&Z2n+x)QHX^p
+z00esgV8|mQcmRZ%02D^@S3L16t`O%c004NIvOKvYIYoh62rY33S640`D9%Y2D-<?i
+z0%4j!F2Z@488U%158(66005wo6%pWr^Zj_v4zAA5HjcIqUoGmt2LB>rV&neh&#Q1i
+z007~1e$oCcFS8neI|hJl{-P!B1ZZ9hpmq0)X0i`JwE&>$+E?>%_<lS*MWK+n+1cgf
+z<k(8YLR(?VSAG6x!e78w{cQPuJpA|d;J)G{fihizM+Erb!p!tcr5w+a34~(Y=8s4G
+zw+sLL9n&JjNn*KJDiq^U5^;`1nvC-@r6P$!k}1U{(*I=Q-z@tBKHoI}uxdU5dyy@u
+zU1J0GOD7Ombim^G008p4Z^6_k2m^p<gW=D2|L;HjN1!DDfM!XOaR2~bL?kX$%CkSm
+z2mk;?pn)o|K^yeJ7%adB9Ki+L!3+FgHiSYX#KJ-lLJDMn9CBbOtb#%)hRv`YDqt_v
+zKpix|QD}yfa1JiQRk#j4a1Z)n2%f<xynzV>LC6RbVIkUx0b+_+BaR3cnT7Zv!AJxW
+zizFb)h!jyGOOZ85F;a?DAXP{m@;!0_Ifq<Ex{*7`05XF7hP+2Hl!3BQJ=6@fL%FCo
+z8iYoo3(#bAF`ADSpqtQgv>H8(HlgRxt7s3}k3K`kFu>>-2Q$QMFfPW!La{h336o>X
+zu_CMttHv6zR;&ZNiS=X8v3CR#fknUxHUxJ<AYmRsNLWl*PS{AOARHt#5!wki2?K;t
+z!Y3k=s7tgax)J%r7-BLphge7~Bi0g+6E6^Zh(p9TBoc{3GAFr^0!gu?RMHaCM$&Fl
+zBk3%un>0uoBa_M6WNWeqIg~6QE69c9o#eyhGvpiOA@W-aonk<7r1(?fC{oI5N*U!4
+z<uv66WtcKSRim0x-Ke2d5jBrmLam{;Qm;{ms1r1GnmNsb7D-E`t)i9F8fX`2_i3-_
+zbh;7Ul^#x)&{xvS=|||7=mYe33=M`AgU5(xC>fg=2N-7=cNnjjOr{yriy6mMFgG#l
+znCF=fnQv8CDz++o6_Lscl}eQ+l^ZHARH>?_s@|##Rr6KLRFA1%Q+=*RRWnoLsR`7U
+zt5vF<Q0r40Q)j6=sE4X&sBct1q<&fbi3VB2Ov6t@q*0);U*o*SAPZv|vv@2aYYnT0
+zb%8a+Cb7-ge0D0knEf5Qi#@8Tp*ce{N;6lpQuCB%KL_KOarm5cP6_8Ir<e17iry6O
+zDdH&`rZh~sF=bq9s+O0QSgS~@QL9Jmy*94xr=6y~MY~!1fet~(N+(<=M`w@D1)b+p
+z*;C!83a1uLJv#NSE~;y#8=<>IcfW3@?wFpwUVxrVZ>QdQz32KIeJ}k~{cZZE^+ya?
+z2D1z#2HOnI7(B%_ac?{wFUQ;QQA1tBKtrWrm0_3Rgps+?Jfqb{jYbcQX~taRB;#$y
+zZN{S}1|}gUOHJxc?wV3fxuz+mJ4`!F$IZ;mqRrNsHJd##*D~ju=bP7?-?v~|cv>vB
+zsJ6IeNwVZxrdjT`yl#bBIa#GxRa#xMMy;K#CDyyGyQdMSxlWT#tDe?p!?5wT$+oGt
+z8L;Kp2HUQ-ZMJ=3XJQv;x5ci*?vuTfeY$;({XGW_huIFR9a<fJbF^|4I#xQ~n$Dc=
+zKYhjYmgz5NSkDm8*fZm{6U!;YX`NG>(?@3)XSs8O^N5RyOM=TTmp(3=8^+zpz2r)C
+z^>JO{deZfso3oq3?Wo(Y?l$ge?uXo;%ru`Vo>?<<(8I_>;8Eq#KMS9gFl*neeosSB
+zfoHYnBQIkwkyowPu(zdms`p{<7e4kra-ZWq<2*OsGTvEV%s0Td$hXT+!*8Bnh2KMe
+zBmZRodjHV?r+_5^X9J0WL4jKW`}lf%A-|44I@@LTvf1rHjG(ze6+w@Jt%Bvjts!X0
+z?2xS?_ve_-k<Mujg;0Lz*3buG=3$G&ehepthlN*$KaOySSQ^nWmo<0M+(UEUMEXRQ
+zMBbZcF;6+KElM>iKB_KiJlZ$9G`c^=E@oNG)mWWaNo-3TIW8)$Hg0Ub-~8?KhvJ>$
+z3*&nim@mj(aCxE5!t{lw7O5^0EIO7zOo&c6l<+|iDySBWCGrz@C5{St!X3hAA}`T4
+z(TLbXTq+(;@<=L8dXnssyft|w#WSTW<++3>sgS%(4NTpeI-VAqb|7ssJvzNHgOZVu
+zaYCvgO_R1~>SyL=cFU|~g|hy|Zi}}s9+d~lYqOB71z9Z$wnC=pR9Yz4DhIM>Wmjgu
+z&56o6maCpC&F##y%G;1PobR9i?GnNg;gYtchD%p19a!eQtZF&3JaKv33gZ<8D~47E
+ztUS1iwkmDaPpj=$m#%)jCVEY4fnLGNg2A-`YwHVD3gv};>)hAvT~AmqS>Lr``i7kw
+zJ{5_It`yrBmlc25DBO7E8;5VoznR>Ww5hAaxn$2~(q`%A-YuS64wkBy=9dm`4cXeX
+z4c}I@?e+FW+b@^RDBHV(wnMq2zdX3SWv9u`%{xC-q*U}&`cyXV(%rRT*Z6MH?i+i&
+z_B8C(+grT%{XWUQ+f@NoP1R=AW&26{v-dx)iK^-Nmiuj8txj!m?Z*Ss1N{dh4z}01
+z)YTo*JycSU)+_5r4#yw9{+;i4Ee$peRgIj+;v;ZGdF1K$3E%e~4LaI(jC-u%2h$&R
+z9cLXcYC@Xwnns&bn)_Q~Te?roKGD|d-g^8;+aC{{G(1^(O7m37Y1-+6)01cN&y1aw
+zoqc{T`P^XJqPBbIW6s}d4{z_f5Om?vMgNQEJG?v2T=KYd^0M3I6IZxbny)%vZR&LD
+zJpPl@Psh8QyPB@KTx+@RdcC!KX7}kEo;S|j^u2lU7XQ}Oo;f|;z4Ll+_r>@1-xl3|
+zawq-H%e&ckC+@AhPrP6BK<z=<L*0kfKU@CX*zeqbYQT4(^U>T#_XdT7&;F71j}Joy
+zkC~6lh7E@6o;W@^IpRNZ{ptLtL(gQ-CY~4mqW;US7Zxvm_|@yz&e53Bp_lTPlfP|z
+zrTyx_>lv@x#=^!PzR7qqF<$gm`|ZJZ+;<)Cqu&ot<a{81DF0~rvGr5Xr~8u`lav1h
+z1DNytV>2z=0000WV@Og>004R=004l4008;_004mL004C`008P>0026e000+nl3&F}
+z000FHNkl<Zc-oAXTc})D8OML$xAxr5T+W=ioFpfSCe5Kidx3hvqV=KDqTquqd1%E-
+z^C0y_P+G7ALQBOwNn#&-u_y{k`y^GN(5F0zXz?kO2B9>TmY$@^Bspg$d*;l{UTb|m
+z%s!J-=8$&5zOeURzxChW<-fO>834WE+w2}r%1lGQcJ<a<-`yJhcX>Pe7!V**Oqw*x
+z>#Wuve7#osTrb8khRx@8tM>zturLIbge!x8y!7t1-#vSC^mc8MZ6k8~2{T9>G|I<b
+zKHC2Nxx3mYPK%Z>%RWikty~a95-#=r{L;lMFTXJMBgB}4MVRTc+0hJ~I*zs<d*!}E
+z&;PifRigR1a^1a>YMBpi{_WX!E}wm2l8ulY=o~mFs5lZ8oX)PRfLY-E8-ID`;^kle
+zArd~Jd=5`^iOtbFk6*le?(D=*Kyt7uleEg<T9f|O6$ZTq<Ft&R^EWYrOTE`lesJUO
+zKTTY95gsgSeR$)qza5NwXbx6OxOKh7&5xSgx?W<qC8S%9L9a-9y?}*ezJQPLzus%V
+z98YhoFTjVBkIr6A|J8MQd{u-|zfS*J8N=fW0ax%O$rRNIlTl<mh-h9z3Z#?wYrXWX
+zvkUM^xOs4}eF@1`$E?6`vw~`dx`?PpB%5s-Q1wj5hMy>s=V0td^vCbE7T{)K8uQ8#
+zffy6~G@?mBG~`f^XaEU_8fHfHiiiUs8pJp$&hrR+RXT_$NJQ1&R;>{<pkh1y1PCHF
+zpNAxs1?9kdJ0}qknUa(Oh(|Qb75h0@08!8+U@`8c@ix4m^?xrFyR*`YpowRxF#$Xx
+zc_?<kdD4>-xMIZ2FoU8~s>QY10=!yUJKw2&B@J;_T9L@o@`!RZVm1RyuGk{D0+eer
+zLd-k1S~^I#`oQZ8@KVz1?W;d@rr;E@S!1A)T05iK6beO92U>t~O;~Dz7GWnMDzLKj
+z<&Apj?icrHqA_dB-}+6b_N5Jz*^OvmYE&9VwI$R$3DuTTu7kK4SO6zba!uAdKR7K|
+zx&V(cqg?2w>)n$-FS+_I?|={u)DY(pi9|D^?f8yhQ8`q9@<PQO`_o`JV6SQ+#35_V
+zhhJT7JoKN)%vTcCnH}VAD1fSvIK{aHKUI?K2rKT9Q=6NcVRLJ9Z@A_Ad)9vPTqSAY
+zJ;Wfn70;SQr2tV06Ja`lEOi`d{_u@TY4uG3oU^^*d8bk@AN%KBou^*Se8f)!lWk)=
+zHMR$lVLz}vh>X*~c;so<9t^GJub=i7$jI>A0X|zHa-?(ORJVTbG{jlrVlccnypO~%
+zi+Q=+<Z$!E?~5#7APR{UNu+XTcr;I~bm+so_n$oHTygF<qM*4+i3t1akEGq|*M4Df
+zgfl^W0j7M4att50IkfWVnS-rwZ0uCVP7{g1QgJ^=TTlGTWVm5A#u(xX<2%RvcI-U`
+zS4+Qe;74bwrB41C%$2Kfc;$(WO8LM!6F?IJk&KimlTU|(kcE^^<EyV6UH#q#6-9ID
+z&B_DpTlvn5gRxKhw@Qqs4J28CVi8NiXMyj;e-e(bJ^fr`X&p1eX^qdfpSmC{|FOS0
+z=E}!?u3j6nHGnKMai#WWhnqzz#m@PA4nOloFgQ^AHqG+=rz*~e!)sN(cyE_u$J;Eo
+z8<@11hAwyfSS&`!SZjUrXU7jb{pf1#;q#r9eQ&Cys47}4fC@f0dEND6^#1_>(`PV9
+TaLV@|00000NkvXXu0mjfFQ>GW
+
+literal 0
+HcmV?d00001
+
+-- 
+1.7.1
+
