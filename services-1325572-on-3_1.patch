@@ -1,0 +1,202 @@
+From 860eba8edb147f40310b418d121a29186fde2f6c Mon Sep 17 00:00:00 2001
+From: James Silver <jamsilver@gmail.com>
+Date: Thu, 19 Jul 2012 19:01:26 +0100
+Subject: [PATCH] Issue #1325572: Integrate services with libraries
+
+---
+ servers/rest_server/includes/RESTServer.inc        |    2 +-
+ servers/rest_server/includes/rest_server.views.inc |    4 +-
+ servers/rest_server/rest_server.api.php            |   15 ++++---
+ servers/rest_server/rest_server.info               |    3 +-
+ servers/rest_server/rest_server.install            |   14 ++++--
+ servers/rest_server/rest_server.module             |   42 +++++++++++++++++---
+ 6 files changed, 57 insertions(+), 23 deletions(-)
+
+diff --git a/servers/rest_server/includes/RESTServer.inc b/servers/rest_server/includes/RESTServer.inc
+index 37db766..a262a51 100755
+--- a/servers/rest_server/includes/RESTServer.inc
++++ b/servers/rest_server/includes/RESTServer.inc
+@@ -482,7 +482,7 @@ class RESTServer {
+   }
+ 
+   public static function parseYAML($handle) {
+-    module_load_include('php', 'rest_server', 'lib/spyc');
++    include_once _rest_server_get_spyc_location();
+     return Spyc::YAMLLoadString(self::contentFromStream($handle));
+   }
+ 
+diff --git a/servers/rest_server/includes/rest_server.views.inc b/servers/rest_server/includes/rest_server.views.inc
+index b23f191..37feff2 100644
+--- a/servers/rest_server/includes/rest_server.views.inc
++++ b/servers/rest_server/includes/rest_server.views.inc
+@@ -54,7 +54,7 @@ class RESTServerViewBuiltIn extends RESTServerView {
+   }
+ 
+   private function render_yaml($data) {
+-    module_load_include('php', 'rest_server', 'lib/spyc');
++    include_once _rest_server_get_spyc_location();
+     return Spyc::YAMLDump($data, 4, 60);
+   }
+ 
+@@ -102,4 +102,4 @@ class RESTServerViewBuiltIn extends RESTServerView {
+       $parent->appendChild($doc->createTextNode($data));
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/servers/rest_server/rest_server.api.php b/servers/rest_server/rest_server.api.php
+index 23b1d26..af4fced 100644
+--- a/servers/rest_server/rest_server.api.php
++++ b/servers/rest_server/rest_server.api.php
+@@ -41,12 +41,14 @@ function hook_rest_server_response_formatters_alter(&$formatters) {
+    * nonsensical but illustrates the proper use of this hook.
+    */
+ 
+-  // Add a Yaml response format.
+-  $formatters['yaml'] = array(
+-    'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
+-    'view' => 'RESTServerViewBuiltIn',
+-    'view arguments' => array('format' => 'yaml'),
+-  );
++  // Add a Yaml response format conditionally.
++  if (_rest_server_get_spyc_location() !== false) {
++    $formatters['yaml'] = array(
++      'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
++      'view' => 'RESTServerViewBuiltIn',
++      'view arguments' => array('format' => 'yaml'),
++    );
++  }
+ 
+   // Add a Rss response format.
+   $formatters['rss'] = array(
+@@ -58,4 +60,3 @@ function hook_rest_server_response_formatters_alter(&$formatters) {
+   // Remove the jsonp response format.
+   unset($formatters['jsonp']);
+ }
+-
+diff --git a/servers/rest_server/rest_server.info b/servers/rest_server/rest_server.info
+index a264ed7..04de757 100644
+--- a/servers/rest_server/rest_server.info
++++ b/servers/rest_server/rest_server.info
+@@ -10,9 +10,9 @@ files[] = includes/RESTServer.inc
+ 
+ files[] = lib/bencode.php
+ files[] = lib/mimeparse.php
+-files[] = lib/spyc.php
+ 
+ dependencies[] = services
++dependencies[] = libraries
+ 
+ core = 7.x
+ ; Information added by drupal.org packaging script on 2011-11-16
+@@ -20,4 +20,3 @@ version = "7.x-3.1"
+ core = "7.x"
+ project = "services"
+ datestamp = "1321482643"
+-
+diff --git a/servers/rest_server/rest_server.install b/servers/rest_server/rest_server.install
+index 7576adc..c063e0c 100644
+--- a/servers/rest_server/rest_server.install
++++ b/servers/rest_server/rest_server.install
+@@ -11,13 +11,17 @@ function rest_server_requirements($phase) {
+   $requirements = array();
+   // Ensure translations don't break at install time
+   $t = get_t();
++
+   if ($phase == 'install') {
+-    if (!file_exists(dirname(__FILE__) . '/lib/spyc.php')) {
++    module_load_include('module', 'rest_server');
++    module_load_include('module', 'libraries');
++    if (_rest_server_get_spyc_location() === false) {
+       $requirements['rest_server'] = array(
+-        'description' => 'A library is missing for rest_server to work',
+-        'severity' => REQUIREMENT_ERROR,
+-        'value' => $t('Please download <a href="@download">spyc</a> and create a file called spyc.php in rest_server/lib', array('@download' =>  'http://code.google.com/p/spyc/downloads/list')),
+-        'title' => t('Missing library'),
++        'description' => 'The spyc library is missing, thus YAML is disabled',
++        'severity' => REQUIREMENT_INFO,
++        'value' => $t('To enable YAML HTTP requets/responses, please download <a href="@download">spyc</a> and create a file called spyc.php in rest_server/lib or use Libraries to retrieve spyc.',
++                      array('@download' =>  'http://code.google.com/p/spyc/downloads/list')),
++        'title' => t('Missing spyc library'),
+       );
+     }
+   }
+diff --git a/servers/rest_server/rest_server.module b/servers/rest_server/rest_server.module
+index 572cec6..e6c20b2 100755
+--- a/servers/rest_server/rest_server.module
++++ b/servers/rest_server/rest_server.module
+@@ -48,11 +48,15 @@ function rest_server_request_parsers() {
+   if (!$parsers) {
+     $parsers = array(
+       'application/x-www-form-urlencoded' => 'RESTServer::parseURLEncoded',
+-      'application/x-yaml' => 'RESTServer::parseYAML',
+       'application/json' => 'RESTServer::parseJSON',
+       'application/vnd.php.serialized' => 'RESTServer::parsePHP',
+       'multipart/form-data' => 'RESTServer::parseMultipart',
+     );
++
++    if (_rest_server_get_spyc_location() !== false) {
++      $parsers['application/x-yaml'] = 'RESTServer::parseYAML';
++    }
++
+     drupal_alter('rest_server_request_parsers', $parsers);
+   }
+   return $parsers;
+@@ -93,11 +97,6 @@ function rest_server_response_formatters() {
+         'view' => 'RESTServerViewBuiltIn',
+         'view arguments' => array('format' => 'php'),
+       ),
+-      'yaml' => array(
+-        'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
+-        'view' => 'RESTServerViewBuiltIn',
+-        'view arguments' => array('format' => 'yaml'),
+-      ),
+       'bencode' => array(
+         'mime types' => array('application/x-bencode'),
+         'view' => 'RESTServerViewBuiltIn',
+@@ -109,6 +108,15 @@ function rest_server_response_formatters() {
+         'view' => 'RssFormatView',
+       ),
+     );
++
++    if(_rest_server_get_spyc_location() !== false) {
++      $formatters['yaml'] = array(
++        'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
++        'view' => 'RESTServerViewBuiltIn',
++        'view arguments' => array('format' => 'yaml'),
++      );
++    }
++
+     drupal_alter('rest_server_response_formatters', $formatters);
+   }
+   return $formatters;
+@@ -204,3 +212,25 @@ function rest_server_services_resources_alter(&$resources, $endpoint) {
+     }
+   }
+ }
++
++/**
++ * Return the location of the spyc library, if any.
++ *
++ * @return the location of the spyc library, if it exists; else return false.
++ */
++function _rest_server_get_spyc_location() {
++  if (function_exists('libraries_get_path')) {
++    $libraries_spyc_loc = libraries_get_path('spyc') . '/spyc.php';
++  } else {
++    return false;
++  }
++  $services_spyc_loc = dirname(__FILE__) . '/lib/spyc.php';
++
++  if (file_exists($libraries_spyc_loc)) {
++    return $libraries_spyc_loc;
++  }
++  else if (file_exists($services_spyc_loc)) {
++    return $services_spyc_loc;
++  }
++  return false;
++}
+-- 
+1.7.1
+
