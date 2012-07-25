@@ -1,0 +1,32 @@
+From 4c910f0f69c35cdb213cd045b5c0f8325045cc39 Mon Sep 17 00:00:00 2001
+From: James Silver <jamsilver@gmail.com>
+Date: Wed, 25 Jul 2012 17:39:14 +0100
+Subject: [PATCH] Allow mediaelement to fallback to other formatters for external videos
+
+---
+ mediaelement.field.inc |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/mediaelement.field.inc b/mediaelement.field.inc
+index 90817db..0ede2cc 100644
+--- a/mediaelement.field.inc
++++ b/mediaelement.field.inc
+@@ -103,6 +103,15 @@ function mediaelement_field_formatter_view($entity_type, $entity, $field, $insta
+       // Support the link field type which stores it's data in 'url'.
+       $src = ($field['type'] == 'link_field') ? $item['url'] : $item['uri'];
+ 
++      // If this is not a local file we cannot display it.
++      // Return NULL to allow file_entity module to use another formatter.
++      if (strpos($src, '://') !== FALSE) {
++        list($protocol, ) = explode(':', $src);
++        if (!in_array($protocol, array('public', 'private'))) {
++          return NULL;
++        }
++      }
++
+       $settings = $display['settings'];
+       $js_settings = array();
+       $js_settings['opts'] = array();
+-- 
+1.7.1
+
