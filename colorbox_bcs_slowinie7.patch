@@ -1,0 +1,39 @@
+From 8f3d555c449cf4237073f4c80232bc1d63d84cf0 Mon Sep 17 00:00:00 2001
+From: James Silver <jamsilver@gmail.com>
+Date: Tue, 31 Jul 2012 17:56:36 +0100
+Subject: [PATCH] Fixes CM Issue #11254: Colorbox behaviour unacceptably slow in IE7
+
+---
+ js/colorbox.js      |    2 +-
+ js/colorbox_load.js |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/js/colorbox.js b/js/colorbox.js
+index 144fc4c..c6fc2e9 100644
+--- a/js/colorbox.js
++++ b/js/colorbox.js
+@@ -5,7 +5,7 @@ Drupal.behaviors.initColorbox = {
+     if (!$.isFunction($.colorbox)) {
+       return;
+     }
+-    $('a, area, input', context)
++    $('#modalContent, #section-content').find('a, area, input')
+       .filter('.colorbox')
+       .once('init-colorbox-processed')
+       .colorbox(settings.colorbox);
+diff --git a/js/colorbox_load.js b/js/colorbox_load.js
+index dc70c1b..c738565 100644
+--- a/js/colorbox_load.js
++++ b/js/colorbox_load.js
+@@ -31,7 +31,7 @@ Drupal.behaviors.initColorboxLoad = {
+       }
+       return p;
+     };
+-    $('a, area, input', context)
++    $('#modalContent, #section-content').find('a, area, input')
+       .filter('.colorbox-load')
+       .once('init-colorbox-load-processed', function () {
+         var params = $.urlParams($(this).attr('href'));
+-- 
+1.7.1
+
