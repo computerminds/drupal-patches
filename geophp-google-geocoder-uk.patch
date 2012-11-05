@@ -1,0 +1,23 @@
+diff --git a/lib/adapters/GoogleGeocode.class.php b/lib/adapters/GoogleGeocode.class.php
+index 4b40870..295cd90 100644
+--- a/lib/adapters/GoogleGeocode.class.php
++++ b/lib/adapters/GoogleGeocode.class.php
+@@ -29,7 +29,7 @@ class GoogleGeocode extends GeoAdapter
+    * @param return_multiple - Return all results in a multipoint or multipolygon
+    * @return Geometry|GeometryCollection
+    */
+-  public function read($address, $return_type = 'point', $bounds = FALSE, $return_multiple = FALSE) {
++  public function read($address, $return_type = 'point', $bounds = FALSE, $return_multiple = FALSE, $region = 'uk') {
+     if (is_array($address)) $address = join(',', $address);
+     
+     if (gettype($bounds) == 'object') {
+@@ -46,6 +46,9 @@ class GoogleGeocode extends GeoAdapter
+     $url .= '?address='. urlencode($address);
+     $url .= $bounds_string;
+     $url .= '&sensor=false';
++    if (!empty($region)) {
++      $url .= '&region=' . $region;
++    }
+     $this->result = json_decode(@file_get_contents($url));
+     
+     if ($this->result->status == 'OK') {
