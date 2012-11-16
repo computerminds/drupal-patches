@@ -1,0 +1,29 @@
+From 299303604e48fdbc8e82f73a35c594fb54858320 Mon Sep 17 00:00:00 2001
+From: James Silver <jamsilver@gmail.com>
+Date: Fri, 16 Nov 2012 19:03:20 +0000
+Subject: [PATCH] Allow exception style blocks
+
+---
+ emogrifier.php |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/emogrifier.php b/emogrifier.php
+index 662f504..d2ab849 100644
+--- a/emogrifier.php
++++ b/emogrifier.php
+@@ -137,10 +137,12 @@ class Emogrifier {
+         $css = $this->css;
+         $nodes = @$xpath->query('//style');
+         foreach ($nodes as $node) {
++          if (!$node->getAttribute('class') || (strpos($node->getAttribute('class'), 'do-not-emogrify') === FALSE)) {
+             // append the css
+             $css .= "\n\n{$node->nodeValue}";
+             // remove the <style> node
+             $node->parentNode->removeChild($node);
++          }
+         }
+ 
+         // filter the CSS
+-- 
+1.7.1
+
