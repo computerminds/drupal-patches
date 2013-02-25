@@ -1,0 +1,58 @@
+567405504a314e6f171328ddbd3576f17f22b59a New commit.
+diff --git a/includes/SolrSearchAPIFieldCollapseExtender.inc b/includes/SolrSearchAPIFieldCollapseExtender.inc
+index 9d779a0..8a9c6a1 100644
+--- a/includes/SolrSearchAPIFieldCollapseExtender.inc
++++ b/includes/SolrSearchAPIFieldCollapseExtender.inc
+@@ -13,6 +13,8 @@ class SolrSearchAPIFieldCollapseExtender extends SearchApiAbstractQueryExtender
+       'fields' => isset($this->options['fields']) ? array_keys($this->options['fields']) : array(),
+       'group_sort' => isset($this->options['group_sort']) ? $this->options['group_sort'] : '',
+       'group_sort_direction' => isset($this->options['group_sort_direction']) ? $this->options['group_sort_direction'] : 'asc',
++      'group_second_sort' => isset($this->options['group_second_sort']) ? $this->options['group_second_sort'] : '',
++      'group_second_sort_direction' => isset($this->options['group_second_sort_direction']) ? $this->options['group_second_sort_direction'] : 'asc',
+       'group_limit' => isset($this->options['group_limit']) ? $this->options['group_limit'] : 1,
+       'truncate' => isset($this->options['truncate']) ? $this->options['truncate'] : TRUE,
+       'group_facet' => isset($this->options['group_facet']) ? $this->options['group_facet'] : FALSE,
+@@ -78,6 +80,25 @@ class SolrSearchAPIFieldCollapseExtender extends SearchApiAbstractQueryExtender
+       '#default_value' => $default_sort_direction,
+     );
+ 
++    $default_second_sort = isset($this->options['group_second_sort']) ? $this->options['group_second_sort'] : '';
++
++    $form['group_second_sort'] = array(
++      '#type' => 'select',
++      '#title' => t('Group second sort'),
++      '#options' => $field_sorts,
++      '#default_value' => $default_second_sort,
++      '#description' => t('Choose the field by to sort within each group, the groups themselves will be sorted by the main query sorts.')
++    );
++
++    $default_second_sort_direction = isset($this->options['group_second_sort_direction']) ? $this->options['group_second_sort_direction'] : '';
++
++    $form['group_second_sort_direction'] = array(
++      '#type' => 'select',
++      '#title' => t('Group second - sort direction'),
++      '#options' => array('asc' => t('Ascending'), 'desc' => t('Descending')),
++      '#default_value' => $default_second_sort_direction,
++    );
++
+     $default_limit = isset($this->options['group_limit']) ? $this->options['group_limit'] : 1;
+ 
+     $form['group_limit'] = array(
+diff --git a/service.inc b/service.inc
+index e7b0ce3..3f3260f 100644
+--- a/service.inc
++++ b/service.inc
+@@ -580,6 +580,13 @@ class SearchApiSolrService extends SearchApiAbstractService {
+         $group_sort_direction = isset($field_collapse['group_sort_direction']) ? $field_collapse['group_sort_direction'] : 'asc';
+         $params['group.sort'] = $fields[$field_collapse['group_sort']] . ' ' . $group_sort_direction;
+       }
++      if (!empty($field_collapse['group_second_sort']) && isset($fields[$field_collapse['group_second_sort']])) {
++        $group_sort_direction = isset($field_collapse['group_second_sort_direction']) ? $field_collapse['group_second_sort_direction'] : 'asc';
++        if (!empty($params['group.sort'])) {
++          $params['group.sort'] .= ',';
++        }
++        $params['group.sort'] .= $fields[$field_collapse['group_second_sort']] . ' ' . $group_sort_direction;
++      }
+       if (!empty($field_collapse['group_limit']) && ($field_collapse['group_limit'] != 1)) {
+         $params['group.limit'] = $field_collapse['group_limit'];
+       }
