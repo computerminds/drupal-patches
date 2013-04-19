@@ -1,0 +1,31 @@
+diff --git a/viewreference.module b/viewreference.module
+index 05052ff..a3b38dd 100755
+--- a/viewreference.module
++++ b/viewreference.module
+@@ -569,7 +569,7 @@ function viewreference_get_view($element, $params = array()) {
+             $view['link'] = l($view['title'], $view['view']->get_url($view['args'], $view['path']));
+           }
+           else {
+-            $view['link'] = $view['title'];
++            $view['link'] = check_plain($view['title']);
+           }
+         }
+       }
+@@ -614,7 +614,7 @@ function theme_viewreference_formatter_full($variables) {
+   $output = '';
+   if ($view = viewreference_get_view($element, array('contextual', 'title', 'embed'))) {
+     $output .= '<div class="contextual-links-region">';
+-    $output .= '<h3 class="title viewreference-title">' . $view['title'] . '</h3>';
++    $output .= '<h3 class="title viewreference-title">' . check_plain($view['title']) . '</h3>';
+     $output .= $view['contextual'];
+     $output .= $view['embed'];
+     $output .= '</div>';
+@@ -629,7 +629,7 @@ function theme_viewreference_formatter_plain($variables) {
+   $element = &$variables['element'];
+   $output = '';
+   if ($view = viewreference_get_view($element, array('title'))) {
+-    $output .= $view['title'];
++    $output .= check_plain($view['title']);
+   }
+   return $output;
+ }
