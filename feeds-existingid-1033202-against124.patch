@@ -1,8 +1,13 @@
 diff --git a/plugins/FeedsEntityProcessor.inc b/plugins/FeedsEntityProcessor.inc
-index eb3f300..cbe883d 100644
+index eb3f300..0b2658b 100644
 --- a/plugins/FeedsEntityProcessor.inc
 +++ b/plugins/FeedsEntityProcessor.inc
-@@ -221,4 +221,40 @@ class FeedsEntityProcessor extends FeedsProcessor {
+@@ -217,8 +217,44 @@ class FeedsEntityProcessor extends FeedsProcessor {
+     // Let other modules expose mapping targets.
+     self::loadMappers();
+     $type = $this->entityType();
+-    // drupal_alter('feeds_processor_targets', $targets, $type, $info['bundle']);
++    drupal_alter('feeds_processor_targets', $targets, $type, $info['bundle']);
  
      return $targets;
    }
