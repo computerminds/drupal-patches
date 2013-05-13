@@ -1,0 +1,46 @@
+diff --git a/plugins/FeedsEntityProcessor.inc b/plugins/FeedsEntityProcessor.inc
+index eb3f300..cbe883d 100644
+--- a/plugins/FeedsEntityProcessor.inc
++++ b/plugins/FeedsEntityProcessor.inc
+@@ -221,4 +221,40 @@ class FeedsEntityProcessor extends FeedsProcessor {
+ 
+     return $targets;
+   }
++
++  /**
++   * Get Entity id of an existing feed item entity if available.
++   */
++  protected function existingEntityId(FeedsSource $source, FeedsParserResult $result) {
++    if ($entity_id = parent::existingEntityId($source, $result)) {
++      return $entity_id;
++    }
++
++    $entity_info = entity_get_info($this->entityType());
++    // Iterate through all unique targets and test whether they do already
++    // exist in the database.
++    foreach ($this->uniqueTargets($source, $result) as $target => $value) {
++      switch ($target) {
++        case 'id':
++          // This is our best guess at a quick entitytype-generic way of testing
++          // if the entity ID already exists, but the 'entity keys' property
++          // isn't necessarily the DB column that the entity ID will be stored
++          // in for all entity types. We could use entity_load_single() but that
++          // is expensive.
++          if (db_field_exists($entity_info['base table'], $entity_info['entity keys']['id'])) {
++            $entity_id = db_select($entity_info['base table'], 'bt')
++              ->fields('bt', array($entity_info['entity keys']['id']))
++              ->condition($entity_info['entity keys']['id'], $value)
++              ->execute()
++              ->fetchField();
++          }
++          break;
++      }
++      if ($entity_id) {
++        // Return with the first entity id found.
++        return $entity_id;
++      }
++    }
++    return 0;
++  }
+ }
+\ No newline at end of file
