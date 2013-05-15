@@ -49,3 +49,33 @@ index eb3f300..0b2658b 100644
 +  }
  }
 \ No newline at end of file
+diff --git a/plugins/FeedsProcessor.inc b/plugins/FeedsProcessor.inc
+index 9ec0c4c..5004407 100755
+--- a/plugins/FeedsProcessor.inc
++++ b/plugins/FeedsProcessor.inc
+@@ -409,11 +409,22 @@ abstract class FeedsProcessor extends FeedsPlugin {
+     // need to clear target elements of each item before mapping in case we are
+     // mapping on a prepopulated item such as an existing node.
+     foreach ($this->config['mappings'] as $mapping) {
+-      if (isset($targets[$this->id][$mapping['target']]['real_target'])) {
+-        unset($target_item->{$targets[$this->id][$mapping['target']]['real_target']});
++      if (isset($this->targets[$mapping['target']]['real_target'])) {
++        $real_target = $this->targets[$mapping['target']]['real_target'];
++        if (isset($target_item->{$real_target}) && is_array($target_item->{$real_target})) {
++          $target_item->{$real_target} = array();
++        }
++        else {
++          unset($target_item->{$real_target});
++        }
+       }
+       elseif (isset($target_item->{$mapping['target']})) {
+-        unset($target_item->{$mapping['target']});
++        if (is_array($target_item->{$mapping['target']})) {
++          $target_item->{$mapping['target']} = array();
++        }
++        else {
++          unset($target_item->{$mapping['target']});
++        }
+       }
+     }
+ 
