@@ -1,0 +1,156 @@
+diff --git a/jquery_countdown.admin.inc b/jquery_countdown.admin.inc
+index 114d128..8b23edf 100644
+--- a/jquery_countdown.admin.inc
++++ b/jquery_countdown.admin.inc
+@@ -56,6 +56,19 @@ function jquery_countdown_admin() {
+     '#type' => 'textarea',
+     '#default_value' => check_plain(variable_get('jquery_countdown_msg_format', ''))
+   );
++
++  $form['jquery_countdown_layout'] = array(
++    '#title' => t('Layout'),
++    '#description' => t(
++      'Provide a customised layout for more control over the countdown appearance (see !link).<br/>Example (minutes and seconds are with leading zero): <em>%example</em>',
++      array(
++        '!link' => l('documentation', 'http://keith-wood.name/countdownRef.html#layout', array('external' => TRUE)),
++        '%example' => '<span>{dn}</span>:<span>{hn}</span>:<span>{mnn}</span>:<span>{snn}</span>',
++      )
++    ),
++    '#type' => 'textfield',
++    '#default_value' => variable_get('jquery_countdown_layout', ''),
++  );
+   
+   return system_settings_form($form);
+ }// end function jquery_countdown_admin;
+diff --git a/jquery_countdown.install b/jquery_countdown.install
+index b56a894..5f47ee7 100644
+--- a/jquery_countdown.install
++++ b/jquery_countdown.install
+@@ -33,5 +33,6 @@ function jquery_countdown_uninstall() {
+   variable_del('jquery_countdown_target');
+   variable_del('jquery_countdown_exp_txt');
+   variable_del('jquery_countdown_msg_format');
++  variable_del('jquery_countdown_layout');
+   
+ }// end function jquery_countdown_uninstall;
+diff --git a/jquery_countdown.module b/jquery_countdown.module
+index d6dd19b..45aa4fb 100644
+--- a/jquery_countdown.module
++++ b/jquery_countdown.module
+@@ -38,8 +38,7 @@ function jquery_countdown_block_info() {
+   
+   $blocks = array();
+   $blocks['jquery_countdown']['info'] = t('jQuery Countdown Block');
+-  $blocks['jquery_countdown']['cache'] = DRUPAL_NO_CACHE;
+-  
++
+   return $blocks;
+ 
+ }// end function jquery_countdown_block_info;
+@@ -93,8 +92,16 @@ function _jquery_countdown_block_content($delta = '') {
+     'onExpiry' => 'Drupal.jQueryCountdownEvent',
+     'expiryText' => check_plain(variable_get('jquery_countdown_exp_txt', ''))
+   );
++  // add "layout" option if provided
++  if ($layout = variable_get('jquery_countdown_layout', '')) {
++    $options['layout'] = $layout;
++  }
+   
+-  return theme('jquery_countdown', array('options' => $options, 'id' => 'jquery_countdown-' . $delta ));
++  return array(
++    '#theme' => 'jquery_countdown',
++    '#id' => 'jquery_countdown-' . $delta,
++    '#options' => $options,
++  );
+ }// end function _jquery_countdown_block_content;
+ 
+ /**
+@@ -170,11 +177,64 @@ function jquery_countdown_field_formatter_info() {
+     'jquery_countdown' => array(
+       'label' => t('jQuery Countdown'),
+       'field types' => array('date', 'datestamp', 'datetime'),
++      'settings' => array(
++        'layout' => '',
++      ),
+     ),
+   );
+   return $formatters;
+ }
+ 
++/**
++ * Implements hook_field_formatter_settings_form().
++ */
++function jquery_countdown_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
++  $display = $instance['display'][$view_mode];
++  $settings = $display['settings'];
++
++  $element = array();
++  switch ($display['type']) {
++    case 'jquery_countdown':
++      $element['layout'] = array(
++        '#title' => t('Customise layout'),
++        '#description' => t(
++          'Provide a customised layout for more control over the countdown appearance (see !link).<br/>Example (minutes and seconds are with leading zero):<br />%example',
++          array(
++            '!link' => l('documentation', 'http://keith-wood.name/countdownRef.html#layout', array('external' => TRUE)),
++            '%example' => '<span>{dn}</span>:<span>{hn}</span>:<span>{mnn}</span>:<span>{snn}</span>',
++          )
++        ),
++        '#type' => 'textfield',
++        '#default_value' => $settings['layout'],
++      );
++      break;
++  }
++
++  return $element;
++}
++
++/**
++ * Implements hook_ield_formatter_settings_summary().
++ */
++function jquery_countdown_field_formatter_settings_summary($field, $instance, $view_mode) {
++  $display = $instance['display'][$view_mode];
++  $settings = $display['settings'];
++
++  $return = array();
++  switch ($display['type']) {
++    case 'jquery_countdown':
++      if (empty($settings['layout'])) {
++        $return[] = t('Using default layout.');
++      }
++      else {
++        $return[] = t('Using customised layout: %layout', array('%layout' => check_plain($settings['layout'])));
++      }
++      break;
++  }
++
++  return implode('<br />', $return);
++}
++
+ function jquery_countdown_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+   $element = array();
+   $settings = $display['settings'];
+@@ -216,13 +276,17 @@ function jquery_countdown_field_formatter_view($entity_type, $entity, $field, $i
+           continue;
+         }
+         else {
+-          $vars['delta'] = $delta;
+-          $vars['item'] = $item;
+-          $vars['id'] = $instance['field_name'] . '-' . $instance['id']; // use field as unique id
+-          $vars['options']['until'] = date("F d, Y g:i a +0000", strtotime($item['value'])); // get date from start field
+-
+-          $element[$delta] = array('#markup' => theme('jquery_countdown', $vars));
++          $element[$delta] = array(
++            '#theme' => 'jquery_countdown',
++            '#delta' => $delta,
++            '#item' => $item,
++            '#id' => $instance['field_name'] . '-' . $instance['id'], // use field as unique id
++            '#options' => array('until' => date("F d, Y g:i a +0000", strtotime($item['value']))), // get date from start field
++          );
+ 
++          if (!empty($settings['layout'])) {
++            $element[$delta]['options']['layout'] = $settings['layout'];
++          }
+         }
+       }    
+     break;
