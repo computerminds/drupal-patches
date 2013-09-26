@@ -1,0 +1,15 @@
+diff --git a/includes/query.inc b/includes/query.inc
+index cde6bea..1fdae9b 100644
+--- a/includes/query.inc
++++ b/includes/query.inc
+@@ -942,6 +942,10 @@ class SearchApiQuery implements SearchApiQueryInterface {
+     return $this->query_extenders;
+   }
+ 
++  public function resetQueryExtenders() {
++    unset($this->query_extenders);
++  }
++
+ }
+ 
+ /**
