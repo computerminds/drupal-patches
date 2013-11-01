@@ -1,8 +1,8 @@
 diff --git a/includes/common.inc b/includes/common.inc
-index 27fa190..7fb31ea 100644
+index 9689033..430a474 100644
 --- a/includes/common.inc
 +++ b/includes/common.inc
-@@ -3867,50 +3867,24 @@ function drupal_html_id($id) {
+@@ -3876,50 +3876,23 @@ function drupal_html_id($id) {
    // take into account IDs that are already in use on the base page.
    $seen_ids_init = &drupal_static(__FUNCTION__ . ':init');
    if (!isset($seen_ids_init)) {
@@ -17,7 +17,6 @@ index 27fa190..7fb31ea 100644
 -    // function, this usage is safe.
 -    if (empty($_POST['ajax_html_ids'])) {
 -      $seen_ids_init = array();
-+
 +    // A number of contrib modules were relying on being able to unset
 +    // $_POST['ajax_html_ids'] to not trigger the unique ID functionality
 +    // on AJAX requests, so we still check that variable and respond as they
@@ -31,16 +30,16 @@ index 27fa190..7fb31ea 100644
 -      // requested id. $_POST['ajax_html_ids'] contains the ids as they were
 -      // returned by this function, potentially with the appended counter, so
 -      // we parse that to reconstruct the $seen_ids array.
--      if (is_array($_POST['ajax_html_ids'])) {
+-      if (isset($_POST['ajax_html_ids'][0]) && strpos($_POST['ajax_html_ids'][0], ',') === FALSE) {
 -        $ajax_html_ids = $_POST['ajax_html_ids'];
 +      if (is_numeric($_POST['ajax_html_ids_counter'])) {
 +        $seen_ids_init = $_POST['ajax_html_ids_counter'];
        }
        else {
--        // jquery.form.js may send the server a comma-separated string instead
--        // of an array (see http://drupal.org/node/1575060), so we need to
--        // convert it to an array in that case.
--        $ajax_html_ids = explode(',', $_POST['ajax_html_ids']);
+-        // jquery.form.js may send the server a comma-separated string as the
+-        // first element of an array (see http://drupal.org/node/1575060), so
+-        // we need to convert it to an array in that case.
+-        $ajax_html_ids = explode(',', $_POST['ajax_html_ids'][0]);
 -      }
 -      foreach ($ajax_html_ids as $seen_id) {
 -        // We rely on '--' being used solely for separating a base id from the
@@ -64,7 +63,7 @@ index 27fa190..7fb31ea 100644
  
    $id = strtr(drupal_strtolower($id), array(' ' => '-', '_' => '-', '[' => '-', ']' => ''));
  
-@@ -3929,11 +3903,17 @@ function drupal_html_id($id) {
+@@ -3938,11 +3911,17 @@ function drupal_html_id($id) {
    // the base ID. Requiring a unique delimiter helps ensure that we really do
    // return unique IDs and also helps us re-create the $seen_ids array during
    // Ajax requests.
