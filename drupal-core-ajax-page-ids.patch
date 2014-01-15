@@ -1,8 +1,8 @@
 diff --git a/includes/common.inc b/includes/common.inc
-index 9689033..430a474 100644
+index 8bb70df..1ca7b9c 100644
 --- a/includes/common.inc
 +++ b/includes/common.inc
-@@ -3876,50 +3876,23 @@ function drupal_html_id($id) {
+@@ -3889,50 +3889,23 @@ function drupal_html_id($id) {
    // take into account IDs that are already in use on the base page.
    $seen_ids_init = &drupal_static(__FUNCTION__ . ':init');
    if (!isset($seen_ids_init)) {
@@ -63,7 +63,7 @@ index 9689033..430a474 100644
  
    $id = strtr(drupal_strtolower($id), array(' ' => '-', '_' => '-', '[' => '-', ']' => ''));
  
-@@ -3938,11 +3911,17 @@ function drupal_html_id($id) {
+@@ -3951,11 +3924,17 @@ function drupal_html_id($id) {
    // the base ID. Requiring a unique delimiter helps ensure that we really do
    // return unique IDs and also helps us re-create the $seen_ids array during
    // Ajax requests.
@@ -83,10 +83,10 @@ index 9689033..430a474 100644
  
    return $id;
 diff --git a/misc/ajax.js b/misc/ajax.js
-index 90c3bb8..76b6eaf 100644
+index 90c3bb8..80668fb 100644
 --- a/misc/ajax.js
 +++ b/misc/ajax.js
-@@ -292,9 +292,16 @@ Drupal.ajax.prototype.beforeSerialize = function (element, options) {
+@@ -292,9 +292,17 @@ Drupal.ajax.prototype.beforeSerialize = function (element, options) {
  
    // Prevent duplicate HTML ids in the returned markup.
    // @see drupal_html_id()
@@ -95,8 +95,9 @@ index 90c3bb8..76b6eaf 100644
 +  options.data['ajax_html_ids_counter'] = 1;
    $('[id]').each(function () {
 -    options.data['ajax_html_ids[]'].push(this.id);
++    var $this = $(this);
 +    // If this ID already has a counter, then ensure that the counter is at least that.
-+    if (this.id.indexOf('--') != -1) {
++    if ((typeof $this.attr('id') === 'string') && ($this.attr('id').indexOf('--') != -1)) {
 +      var potentialCounter = this.id.substring(this.id.indexOf('--') + 2);
 +      if ((typeof potentialCounter === 'number' || typeof potentialCounter === 'string') && potentialCounter !== '' && !isNaN(potentialCounter)) {
 +        options.data['ajax_html_ids_counter'] = Math.max(options.data['ajax_html_ids_counter'], potentialCounter);
