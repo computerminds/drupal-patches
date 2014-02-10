@@ -1,0 +1,15 @@
+diff --git a/geofield.install b/geofield.install
+index 961160d..d84fdce 100644
+--- a/geofield.install
++++ b/geofield.install
+@@ -11,6 +11,10 @@
+ function geofield_field_schema($field) {
+ 
+   $schema_callback = '';
++  // In strange cirumstances ctools can fail to be around.
++  if (!function_exists('ctools_include')) {
++    module_load_include('module', 'ctools');
++  }
+   ctools_include('plugins');
+   if (isset($field['settings']['backend'])) {
+     $backend = ctools_get_plugins('geofield', 'geofield_backend', $field['settings']['backend']);
