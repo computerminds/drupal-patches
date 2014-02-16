@@ -1,0 +1,16 @@
+diff --git a/bean.module b/bean.module
+index d605e81..58c71db 100644
+--- a/bean.module
++++ b/bean.module
+@@ -5,6 +5,11 @@
+  * Block Entity
+  */
+ 
++include_once "includes/bean.core.inc";
++include_once "includes/bean.info.inc";
++include_once "plugins/base.inc";
++include_once "bean_admin_ui/plugins/custom.inc";
++
+ /**
+  * Implements hook_entity_info().
+  */
