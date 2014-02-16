@@ -1,5 +1,5 @@
 diff --git a/bean.module b/bean.module
-index d605e81..58c71db 100644
+index d605e81..c8eefad 100644
 --- a/bean.module
 +++ b/bean.module
 @@ -5,6 +5,11 @@
@@ -7,9 +7,9 @@ index d605e81..58c71db 100644
   */
  
 +include_once "includes/bean.core.inc";
-+include_once "includes/bean.info.inc";
-+include_once "plugins/base.inc";
-+include_once "bean_admin_ui/plugins/custom.inc";
++include_once "plugins/BeanPlugin.class.php";
++include_once "plugins/BeanDefault.class.php";
++include_once "bean_admin_ui/plugins/BeanCustom.class.php";
 +
  /**
   * Implements hook_entity_info().
