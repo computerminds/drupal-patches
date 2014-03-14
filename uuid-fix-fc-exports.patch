@@ -1,0 +1,18 @@
+diff --git a/uuid.features.inc b/uuid.features.inc
+index 281052c..98c4ad7 100644
+--- a/uuid.features.inc
++++ b/uuid.features.inc
+@@ -125,7 +125,12 @@ function uuid_entities_features_export_render($module_name, $components, $export
+       if (is_object($entity) && method_exists($entity, 'export')) {
+         $entity = get_object_vars($entity);
+       }
+-      $code[] = '  $entities[\'' . check_plain($component) . '\'][] = (object) ' . features_var_export($entity, '  ') . ';';
++      if (!empty($entity_info['entity class']) && ($entity_info['entity class'] !== 'stdClass')) {
++        $code[] = '  $entities[\'' . check_plain($component) . '\'][] = entity_create(\''. $entity_type . '\', ' . features_var_export($entity, '  ') . ');';
++      }
++      else {
++        $code[] = '  $entities[\'' . check_plain($component) . '\'][] = (object) ' . features_var_export($entity, '  ') . ';';
++      }
+     }
+   }
+   $code[] = '';
