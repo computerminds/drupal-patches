@@ -1,0 +1,115 @@
+diff --git a/ife.module b/ife.module
+index 5e738b6..53adbec 100644
+--- a/ife.module
++++ b/ife.module
+@@ -125,6 +125,10 @@ function ife_theme() {
+       'render element' => 'element',
+       'file' => 'ife.theme.inc',
+     ),
++    'ife_element_title_summary' => array(
++      'variables' => array('!titles' => array()),
++      'file' => 'ife.theme.inc',
++    ),
+   );
+ }
+ 
+@@ -226,11 +230,18 @@ function ife_form_validator($form, &$form_state) {
+ 
+   $form_errors = form_get_errors();
+   if (!empty($form_errors)) {
+-    ife_element_errors_set($form, $form['#ife_display']);
++    $titles = array();
++    ife_element_errors_set($form, $form['#ife_display'], $titles);
+ 
+     if ($form['#ife_display'] == 1 && !$global_error_processed) {
+-      $message = filter_xss_admin(variable_get('ife_general_message', 'Please correct all highlighted errors and try again.'));
+-      drupal_set_message($message, 'error');
++      $message = variable_get('ife_general_message', 'Please correct all highlighted errors and try again.');
++
++      // Support !titles token to list element titles which failed validation.
++      if (strpos($message, '!titles') !== FALSE) {
++        $titles = array_filter($titles);
++        $message = strtr($message, array('!titles' => theme('ife_element_title_summary', array('titles' => $titles))));
++      }
++      drupal_set_message(filter_xss_admin($message), 'error');
+ 
+       $global_error_processed = TRUE;
+     }
+@@ -258,15 +269,15 @@ function ife_errors($op = 'get', $id = NULL, $message = NULL) {
+   }
+ }
+ 
+-function ife_element_errors_set($element, $display) {
+-  if (!isset($_SESSION['messages'])) {
++function ife_element_errors_set($element, $display, &$titles = array()) {
++  if (!isset($_SESSION['messages']['error'])) {
+     return;
+   }
+ 
+   // Recurse through all children.
+   foreach (element_children($element) as $key) {
+     if (isset($element[$key]) && $element[$key]) {
+-      ife_element_errors_set($element[$key], $display);
++      ife_element_errors_set($element[$key], $display, $titles);
+     }
+   }
+ 
+@@ -289,6 +300,16 @@ function ife_element_errors_set($element, $display) {
+         unset($_SESSION['messages']['error']);
+       }
+ 
++      // Build array of element titles with errors for use in summary message.
++      $element_title = NULL;
++      if (!empty($element['#title'])) {
++        $element_title = $element['#title'];
++      }
++      if (!empty($element['#ife_title'])) {
++        $element_title = $element['#ife_title'];
++      }
++      $titles[] = $element_title;
++
+       // Set error message in session, so it can be used in our theming.
+       ife_errors('set', $element['#id'], $error_message);
+     }
+diff --git a/ife.settings.inc b/ife.settings.inc
+index 9a7a0d9..507b28d 100644
+--- a/ife.settings.inc
++++ b/ife.settings.inc
+@@ -42,7 +42,7 @@ function ife_settings_form($form, $form_state) {
+   $form['general_settings']['ife_general_message'] = array(
+     '#type' => 'textarea',
+     '#title' => t('General error message'),
+-    '#description' => t('A general error message to display at the top of the page (default Drupal messages display). For use with the option "Show an alternate error message".'),
++    '#description' => t('A general error message to display at the top of the page (default Drupal messages display). For use with the option "Show an alternate error message". <br />The following token is supported: !titles (prints a list of elements which have errors).'),
+     '#default_value' => variable_get('ife_general_message', 'Please correct all highlighted errors and try again.'),
+     '#required' => TRUE,
+   );
+diff --git a/ife.theme.inc b/ife.theme.inc
+index 59394e0..e98c760 100644
+--- a/ife.theme.inc
++++ b/ife.theme.inc
+@@ -58,3 +58,24 @@ function theme_ife_form_element($variables) {
+   }
+   return $output;
+ }
++
++/**
++ * Theme the list of erroneous form elements if used in global error message.
++ */
++function theme_ife_element_title_summary($variables) {
++
++  if (empty($variables['titles'])) {
++    return '';
++  }
++
++  return theme('item_list', array(
++    'items' => $variables['titles'],
++    'title' => '',
++    'type' => 'ul',
++    'attributes' => array(
++      'class' => array(
++        'ife-title-summary',
++      ),
++    ),
++  ));
++}
