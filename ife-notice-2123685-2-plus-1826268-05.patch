@@ -1,5 +1,5 @@
 diff --git a/ife.module b/ife.module
-index 5e738b6..53adbec 100644
+index 5e738b6..e936869 100644
 --- a/ife.module
 +++ b/ife.module
 @@ -125,6 +125,10 @@ function ife_theme() {
@@ -35,17 +35,16 @@ index 5e738b6..53adbec 100644
  
        $global_error_processed = TRUE;
      }
-@@ -258,15 +269,15 @@ function ife_errors($op = 'get', $id = NULL, $message = NULL) {
+@@ -258,18 +269,18 @@ function ife_errors($op = 'get', $id = NULL, $message = NULL) {
    }
  }
  
 -function ife_element_errors_set($element, $display) {
 -  if (!isset($_SESSION['messages'])) {
+-    return;
+-  }
+-
 +function ife_element_errors_set($element, $display, &$titles = array()) {
-+  if (!isset($_SESSION['messages']['error'])) {
-     return;
-   }
- 
    // Recurse through all children.
    foreach (element_children($element) as $key) {
      if (isset($element[$key]) && $element[$key]) {
@@ -54,6 +53,13 @@ index 5e738b6..53adbec 100644
      }
    }
  
++  if (!isset($_SESSION['messages']['error'])) {
++    return;
++  }
++
+   // Check for errors and settings
+   $errors = form_get_errors();
+   $element_id = implode('][', $element['#parents']);
 @@ -289,6 +300,16 @@ function ife_element_errors_set($element, $display) {
          unset($_SESSION['messages']['error']);
        }
