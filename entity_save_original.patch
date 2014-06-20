@@ -1,0 +1,19 @@
+diff --git a/includes/entity.controller.inc b/includes/entity.controller.inc
+index 593d60f..896e402 100644
+--- a/includes/entity.controller.inc
++++ b/includes/entity.controller.inc
+@@ -466,6 +466,14 @@ class EntityAPIController extends DrupalDefaultEntityController implements Entit
+         // is not default we have to restore the field values of the default
+         // revision now by invoking field_attach_update() once again.
+         if ($this->revisionKey && !$entity->{$this->defaultRevisionKey} && !empty($this->entityInfo['fieldable'])) {
++          // <COMPUTERMINDS HACK> @see https://support.computerminds.co.uk/issues/25390
++          // Madness was happening re revisions of paragraphs. Specifically,
++          // at this point temporary files on our new revision were getting
++          // thrown away because they weren't used on the 'current' or the
++          // 'original' as it was told it. Not quite why this wasn't always an
++          // issue with field collection, but this seems to sort it out.
++          $entity->original->original = $entity->original;
++          // </COMPUTERMINDS HACK>
+           field_attach_update($this->entityType, $entity->original);
+         }
+       }
