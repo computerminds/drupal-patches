@@ -1,0 +1,26 @@
+diff --git a/mappers/number.inc b/mappers/number.inc
+index b64c4ee..a3ef94c 100644
+--- a/mappers/number.inc
++++ b/mappers/number.inc
+@@ -49,7 +49,7 @@ function number_feeds_set_target($source, $entity, $target, $value) {
+   $info = field_info_field($target);
+ 
+   // Iterate over all values.
+-  $field = isset($entity->$target) ? $entity->$target : array('und' => array());
++  $field = isset($entity->$target['und']) ? $entity->$target : array('und' => array());
+ 
+   // Allow for multiple mappings to the same target.
+   $delta = count($field['und']);
+diff --git a/mappers/text.inc b/mappers/text.inc
+index 48447d7..cd93646 100644
+--- a/mappers/text.inc
++++ b/mappers/text.inc
+@@ -49,7 +49,7 @@ function text_feeds_set_target($source, $entity, $target, $value) {
+   $info = field_info_field($target);
+ 
+   // Iterate over all values.
+-  $field = isset($entity->$target) ? $entity->$target : array('und' => array());
++  $field = isset($entity->$target['und']) ? $entity->$target : array('und' => array());
+ 
+   // Allow for multiple mappings to the same target.
+   $delta = count($field['und']);
