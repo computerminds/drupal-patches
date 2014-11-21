@@ -1,0 +1,29 @@
+diff --git a/media_youtube.module b/media_youtube.module
+index 2ada98d..46bf417 100644
+--- a/media_youtube.module
++++ b/media_youtube.module
+@@ -72,6 +72,24 @@ function media_youtube_media_parse($embed_code) {
+ }
+ 
+ /**
++ * Implements hook_file_mimetype_mapping_alter().
++ *
++ * Regster the video/youtube mimetype.
++ */
++function media_youtube_file_mimetype_mapping_alter(&$mapping) {
++  $mapping['mimetypes'][] = 'video/youtube';
++}
++
++/*
++ * Implements hook_file_default_types_alter().
++ *
++ * Adds the video/youtube fake mimetype to video files.
++ */
++function media_youtube_file_default_types_alter(&$types) {
++  $types['video']->mimetypes[] = 'video/youtube';
++}
++
++/**
+  * Implements hook_media_format_form_prepare_alter().
+  */
+ function media_youtube_media_format_form_prepare_alter(&$form, &$form_state, $media) {
