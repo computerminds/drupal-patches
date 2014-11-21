@@ -1,0 +1,297 @@
+diff --git a/chatroom.module b/chatroom.module
+index c442dbb..f02921e 100644
+--- a/chatroom.module
++++ b/chatroom.module
+@@ -932,3 +932,11 @@ function chatroom_field_delete($entity_type, $entity, $field, $instance, $langco
+   }
+ }
+ 
++/**
++ * Implements hook_views_api().
++ */
++function chatroom_views_api() {
++  return array(
++    'version' => '3.0'
++  );
++}
+diff --git a/chatroom.views.inc b/chatroom.views.inc
+new file mode 100644
+index 0000000..b24692e
+--- /dev/null
++++ b/chatroom.views.inc
+@@ -0,0 +1,275 @@
++<?php
++/**
++ * @file
++ * Chatroom Views support. Declares the required tables for Views.
++ **/
++
++/**
++ * Implements hook_views_data().
++ */
++function chatroom_views_data() {
++
++  $tables['chatroom'] = array(
++    'table' => array(
++      'group' => t('Chatroom'),
++      'join' => array(
++        'chatroom_msg' => array(
++          'left_field' => 'cid',
++          'field' => 'cid',
++        ),
++      ),
++      'base' => array(
++        'field' => 'cid',
++        'title' => t('Chatrooms'),
++      ),
++    ),
++    'cid' => array(
++      'title' => t('Chatroom ID'),
++      'help' => t('The ID of the chatroom.'),
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort',
++      ),
++    ),
++    'uid' => array(
++      'title' => t('Chatroom creator user ID'),
++      'help' => t('The ID of the user that created the chatroom.'),
++      //'real field' => 'uid',
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'relationship' => array(
++        'base' => 'users',
++        'field' => 'uid',
++        'label' => 'Room creator user ID',
++        'help' => t('Bring in data about the user that created the chatroom.'),
++      ),
++    ),
++    'title' => array(
++      'title' => t('Chatroom title'),
++      'help' => t('The title of the chatroom.'),
++      'field' => array(
++        'handler' => 'views_handler_field',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_string',
++      ),
++      'argument' => array(
++        'handler' => 'views_handler_argument_string',
++      ),
++    ),
++    'public' => array(
++      'title' => t('Public chatroom'),
++      'help' => t('Whether the chatroom is public or not.'),
++      'field' => array(
++        'handler' => 'views_handler_field_boolean',
++        'click sortable' => TRUE,
++        'output formats' => array(
++          'public-private' => array(t('Public'), t('Private')),
++        ),
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_boolean_operator',
++        'label' => t('Public'),
++        'type' => 'yes-no',
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort',
++      ),
++    ),
++    'archived' => array(
++      'title' => t('Archived chatroom'),
++      'help' => t('Whether the chatroom is archived or not.'),
++      'field' => array(
++        'handler' => 'views_handler_field_boolean',
++        'click sortable' => TRUE,
++        'output formats' => array(
++          'archived-open' => array(t('Archived'), t('Open')),
++        ),
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_boolean_operator',
++        'label' => t('Archived'),
++        'type' => 'yes-no',
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort',
++      ),
++    ),
++    // @TODO 'format' field
++  );
++
++  $tables['chatroom_msg'] = array(
++    'table' => array(
++      'group' => t('Chatroom Message'),
++      'join' => array(
++        'chatroom' => array(
++          'left_field' => 'cid',
++          'field' => 'cid',
++        ),
++      ),
++      'base' => array(
++        'field' => 'cmid',
++        'title' => t('Chatroom messages'),
++        'help' => t('Messages posted to chatrooms.'),
++      ),
++    ),
++    'cmid' => array(
++      'title' => t('Chatroom message ID'),
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort',
++      ),
++    ),
++    'cid' => array(
++      'title' => t('Chatroom ID'),
++      'help' => t('The ID of the chatroom.'),
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort',
++      ),
++    ),
++    'uid' => array(
++      'title' => t('Chat message author user ID'),
++      'help' => t('The ID of the user that posted the message.'),
++      //'real field' => 'uid',
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'relationship' => array(
++        'base' => 'users',
++        'field' => 'uid',
++        'label' => 'Message author user ID',
++        'help' => t('Bring in data about the user that posted the message.'),
++      ),
++    ),
++    'recipient_uid' => array(
++      'title' => t('Recipient user ID'),
++      'help' => t('The ID of the user that received the message.'),
++      //'real field' => 'uid',
++      'argument' => array(
++        'handler' => 'views_handler_argument_numeric',
++      ),
++      'field' => array(
++        'handler' => 'views_handler_field_numeric',
++        'click sortable' => TRUE
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_numeric',
++      ),
++      'relationship' => array(
++        'base' => 'users',
++        'field' => 'uid',
++        'label' => 'Message recipient user ID',
++        'help' => t('Bring in data about the user that received the message.'),
++      ),
++    ),
++    'msg_type' => array(
++      'title' => t('Message type'),
++      'help' => t('The type of the message (e.g. command, message).'),
++      'field' => array(
++        'handler' => 'views_handler_field',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_string',
++      ),
++      'argument' => array(
++        'handler' => 'views_handler_argument_string',
++      ),
++    ),
++    'msg' => array(
++      'title' => t('Message'),
++      'help' => t('The content of the message.'),
++      'field' => array(
++        'handler' => 'views_handler_field_markup',
++        'format' => array(
++          'table' => 'chatroom',
++          'field' => 'format',
++        ),
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_string',
++      ),
++      'argument' => array(
++        'handler' => 'views_handler_argument_string',
++      ),
++    ),
++    'anon_name' => array(
++      'title' => t('Anonymous name'),
++      'help' => t('The name of the anonymous user that authored the message.'),
++      'field' => array(
++        'handler' => 'views_handler_field',
++        'click sortable' => TRUE,
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_string',
++      ),
++      'argument' => array(
++        'handler' => 'views_handler_argument_string',
++      ),
++    ),
++    'modified' => array(
++      'title' => t('Timestamp'),
++      'help' => t('The date & time that the message was posted.'),
++      'field' => array(
++        'handler' => 'views_handler_field_date',
++        'click sortable' => TRUE,
++      ),
++      'sort' => array(
++        'handler' => 'views_handler_sort_date',
++      ),
++      'filter' => array(
++        'handler' => 'views_handler_filter_date',
++      ),
++    ),
++  );
++
++  // @TODO 'chatroom_role' table
++  // @TODO 'chatroom_user' table
++
++  return $tables;
++}

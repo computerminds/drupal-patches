@@ -1,0 +1,103 @@
+diff --git a/mediaelement.field.inc b/mediaelement.field.inc
+index dbdf054..90817db 100644
+--- a/mediaelement.field.inc
++++ b/mediaelement.field.inc
+@@ -95,51 +95,54 @@ function mediaelement_field_formatter_view($entity_type, $entity, $field, $insta
+   // A unique caller per page for the JS specific settings to use. This may be
+   // different for ever page view and should not be used for styling.
+   static $id = 0;
+-  $element = array();
+-  $path = drupal_get_path('module', 'mediaelement');
+-  foreach ($items as $delta => $item) {
+-    // Support the link field type which stores it's data in 'url'.
+-    $src = ($field['type'] == 'link_field') ? $item['url'] : $item['uri'];
+-
+-    $settings = $display['settings'];
+-    $js_settings = array();
+-    $js_settings['opts'] = array();
+-    $js_settings['controls'] = (bool)$settings['controls'];
+-    if ($display['type'] == 'mediaelement_video') {
+-      $js_settings['opts']['videoHeight'] = (int)$settings['height'];
+-      $js_settings['opts']['videoWidth'] = (int)$settings['width'];
+-    }
+-    elseif ($display['type'] == 'mediaelement_audio') {
+-      $js_settings['opts']['audioHeight'] = (int)$settings['height'];
+-      $js_settings['opts']['audioWidth'] = (int)$settings['width'];
+-    }
+-
+-    $class = 'mediaelement-formatter-identifier-' . time() . '-' . $id++;
+-    $element[$delta] = array(
+-      '#attributes' => array(
+-        'src' => file_create_url($src),
+-        'class' => $class,
+-      ),
+-      '#settings' => $settings,
+-      '#attached' => array(
+-        'library' => array(array('mediaelement', 'mediaelement')),
+-        'js' => array(
+-          $path . '/mediaelement.js' => array(),
+-          0 => array('type' => 'setting', 'data' => array('mediaelement' => array('.' . $class => $js_settings))),
++  // WYSIWYG does not yet support audio inside a running editor instance.
++  if (!isset($entity) || (isset($entity) && empty($entity->override['wysiwyg']))) {
++    $element = array();
++    $path = drupal_get_path('module', 'mediaelement');
++    foreach ($items as $delta => $item) {
++      // Support the link field type which stores it's data in 'url'.
++      $src = ($field['type'] == 'link_field') ? $item['url'] : $item['uri'];
++
++      $settings = $display['settings'];
++      $js_settings = array();
++      $js_settings['opts'] = array();
++      $js_settings['controls'] = (bool)$settings['controls'];
++      if ($display['type'] == 'mediaelement_video') {
++        $js_settings['opts']['videoHeight'] = (int)$settings['height'];
++        $js_settings['opts']['videoWidth'] = (int)$settings['width'];
++      }
++      elseif ($display['type'] == 'mediaelement_audio') {
++        $js_settings['opts']['audioHeight'] = (int)$settings['height'];
++        $js_settings['opts']['audioWidth'] = (int)$settings['width'];
++      }
++
++      $class = 'mediaelement-formatter-identifier-' . time() . '-' . $id++;
++      $element[$delta] = array(
++        '#attributes' => array(
++          'src' => file_create_url($src),
++          'class' => $class,
+         ),
+-      ),
+-    );
+-    if ($settings['controls']) {
+-      $element[$delta]['#attributes']['controls'] = 'controls';
+-    }
+-
+-    if ($display['type'] == 'mediaelement_video') {
+-      $element[$delta]['#theme'] = 'mediaelement_video';
+-      $element[$delta]['#attributes']['height'] = $display['settings']['height'];
+-      $element[$delta]['#attributes']['width'] = $display['settings']['width'];
+-    }
+-    elseif ($display['type'] == 'mediaelement_audio') {
+-      $element[$delta]['#theme'] = 'mediaelement_audio';
++        '#settings' => $settings,
++        '#attached' => array(
++          'library' => array(array('mediaelement', 'mediaelement')),
++          'js' => array(
++            $path . '/mediaelement.js' => array(),
++            0 => array('type' => 'setting', 'data' => array('mediaelement' => array('.' . $class => $js_settings))),
++          ),
++        ),
++      );
++      if ($settings['controls']) {
++        $element[$delta]['#attributes']['controls'] = 'controls';
++      }
++
++      if ($display['type'] == 'mediaelement_video') {
++        $element[$delta]['#theme'] = 'mediaelement_video';
++        $element[$delta]['#attributes']['height'] = $display['settings']['height'];
++        $element[$delta]['#attributes']['width'] = $display['settings']['width'];
++      }
++      elseif ($display['type'] == 'mediaelement_audio') {
++        $element[$delta]['#theme'] = 'mediaelement_audio';
++      }
+     }
+   }
+   return $element;

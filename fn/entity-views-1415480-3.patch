@@ -1,0 +1,12 @@
+diff --git a/views/plugins/entity_views_plugin_row_entity_view.inc b/views/plugins/entity_views_plugin_row_entity_view.inc
+index db72b5f..9b4b781 100644
+--- a/views/plugins/entity_views_plugin_row_entity_view.inc
++++ b/views/plugins/entity_views_plugin_row_entity_view.inc
+@@ -88,6 +88,7 @@ class entity_views_plugin_row_entity_view extends views_plugin_row {
+ 
+   public function render($values) {
+     if ($entity = $this->get_value($values)) {
++      $entity->view = $this->view;
+       $render = $this->rendered_content[entity_id($this->entity_type, $entity)];
+       return drupal_render($render);
+     }

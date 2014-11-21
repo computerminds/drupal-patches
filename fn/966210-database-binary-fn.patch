@@ -1,0 +1,140 @@
+From 28060926fef1fc3371278d0b83906dbe31b0f3c0 Mon Sep 17 00:00:00 2001
+From: mark burdett <mfburdett@gmail.com>
+Date: Wed, 6 Apr 2011 11:14:49 -0700
+Subject: [PATCH] Issue #966210 by mfb, bfroehle: Add binary attribute to support case sensitivity on MySQL.
+
+---
+ includes/database/mysql/schema.inc                 |    9 +++++-
+ includes/database/schema.inc                       |    3 ++
+ .../tests/upgrade/drupal-6.upload.database.php     |   24 ++++++++++++++++++-
+ modules/system/system.install                      |   19 +++++++++++++++
+ 4 files changed, 51 insertions(+), 4 deletions(-)
+
+diff --git a/includes/database/mysql/schema.inc b/includes/database/mysql/schema.inc
+index 4e88fa1..d0f4259 100644
+--- a/includes/database/mysql/schema.inc
++++ b/includes/database/mysql/schema.inc
+@@ -131,8 +131,13 @@ class DatabaseSchema_mysql extends DatabaseSchema {
+   protected function createFieldSql($name, $spec) {
+     $sql = "`" . $name . "` " . $spec['mysql_type'];
+ 
+-    if (in_array($spec['mysql_type'], array('VARCHAR', 'CHAR', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'TEXT')) && isset($spec['length'])) {
+-      $sql .= '(' . $spec['length'] . ')';
++    if (in_array($spec['mysql_type'], array('VARCHAR', 'CHAR', 'TINYTEXT', 'MEDIUMTEXT', 'LONGTEXT', 'TEXT'))) {
++      if (isset($spec['length'])) {
++        $sql .= '(' . $spec['length'] . ')';
++      }
++      if (!empty($spec['binary'])) {
++        $sql .= ' BINARY';
++      }
+     }
+     elseif (isset($spec['precision']) && isset($spec['scale'])) {
+       $sql .= '(' . $spec['precision'] . ', ' . $spec['scale'] . ')';
+diff --git a/includes/database/schema.inc b/includes/database/schema.inc
+index de1b2f5..69c19c5 100644
+--- a/includes/database/schema.inc
++++ b/includes/database/schema.inc
+@@ -76,6 +76,9 @@ require_once dirname(__FILE__) . '/query.inc';
+  *       the precision (total number of significant digits) and scale
+  *       (decimal digits right of the decimal point). Both values are
+  *       mandatory. Ignored for other field types.
++ *     - 'binary': For type 'char', 'varchar' or 'text' fields on MySQL, forces
++ *       a case-sensitive binary collation. This has no effect on other database
++ *       types for which case sensitivity is already the default behavior.
+  *     All parameters apart from 'type' are optional except that type
+  *     'numeric' columns must specify 'precision' and 'scale'.
+  *  - 'primary key': An array of one or more key column specifiers (see below)
+diff --git a/modules/simpletest/tests/upgrade/drupal-6.upload.database.php b/modules/simpletest/tests/upgrade/drupal-6.upload.database.php
+index 493483f..695c0eb 100644
+--- a/modules/simpletest/tests/upgrade/drupal-6.upload.database.php
++++ b/modules/simpletest/tests/upgrade/drupal-6.upload.database.php
+@@ -114,6 +114,17 @@ db_insert('files')->fields(array(
+   'status' => '1',
+   'timestamp' => '1285708957',
+ ))
++// Test upgrading files with the same name but different case.
++->values(array(
++  'fid' => '11',
++  'uid' => '1',
++  'filename' => 'FORUM-STICKY.PNG',
++  'filepath' => 'sites/default/files/FORUM-STICKY.PNG',
++  'filemime' => 'image/png',
++  'filesize' => '329',
++  'status' => '1',
++  'timestamp' => '1285708957',
++))
+ ->execute();
+ 
+ db_insert('node')->fields(array(
+@@ -235,8 +246,8 @@ db_insert('node_revisions')->fields(array(
+   'vid' => '53',
+   'uid' => '1',
+   'title' => 'node title 40 revision 53',
+-  'body' => "Attachments:\r\nforum-hot-new.png\r\nforum-hot.png\r\nforum-sticky.png\r\nforum-new.png",
+-  'teaser' => "Attachments:\r\nforum-hot-new.png\r\nforum-hot.png\r\nforum-sticky.png\r\nforum-new.png",
++  'body' => "Attachments:\r\nforum-hot-new.png\r\nforum-hot.png\r\nforum-sticky.png\r\nforum-new.png\r\nFORUM-STICKY.PNG",
++  'teaser' => "Attachments:\r\nforum-hot-new.png\r\nforum-hot.png\r\nforum-sticky.png\r\nforum-new.png\r\nFORUM-STICKY.PNG",
+   'log' => '',
+   'timestamp' => '1285709012',
+   'format' => '1',
+@@ -394,4 +405,13 @@ db_insert('upload')->fields(array(
+   'list' => '1',
+   'weight' => '-1',
+ ))
++// Test upgrading files with the same name but different case.
++->values(array(
++  'fid' => '11',
++  'nid' => '40',
++  'vid' => '53',
++  'description' => 'FORUM-STICKY.PNG',
++  'list' => '1',
++  'weight' => '0',
++))
+ ->execute();
+diff --git a/modules/system/system.install b/modules/system/system.install
+index af02edc..0f23676 100644
+--- a/modules/system/system.install
++++ b/modules/system/system.install
+@@ -817,6 +817,7 @@ function system_schema() {
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
++        'binary' => TRUE,
+       ),
+       'filemime' => array(
+         'description' => "The file's MIME type.",
+@@ -2202,6 +2203,7 @@ function system_update_7034() {
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
++        'binary' => TRUE,
+       ),
+       'filemime' => array(
+         'description' => "The file's MIME type.",
+@@ -2972,6 +2974,23 @@ function system_update_7069() {
+ }
+ 
+ /**
++ * Apply binary collation to the file_managed.uri column.
++ */
++function system_update_7999() {
++  $spec = array(
++    'description' => 'The URI to access the file (either local or remote).',
++    'type' => 'varchar',
++    'length' => 255,
++    'not null' => TRUE,
++    'default' => '',
++    'binary' => TRUE,
++  );
++  db_drop_unique_key('file_managed', 'uri');
++  db_change_field('file_managed', 'uri', 'uri', $spec,
++    array('unique keys' => array('uri' => array('uri'))));
++}
++
++/**
+  * @} End of "defgroup updates-6.x-to-7.x"
+  * The next series of updates should start at 8000.
+  */
+-- 
+1.7.1
+

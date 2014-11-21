@@ -1,0 +1,18 @@
+Index: modules/node/node.pages.inc
+===================================================================
+RCS file: /cvs/drupal/drupal/modules/node/node.pages.inc,v
+retrieving revision 1.136
+diff -u -p -r1.136 node.pages.inc
+--- modules/node/node.pages.inc	26 Nov 2010 19:23:01 -0000	1.136
++++ modules/node/node.pages.inc	15 Feb 2011 17:16:13 -0000
+@@ -320,7 +320,9 @@ function node_form_delete_submit($form, 
+ 
+ function node_form_build_preview($form, &$form_state) {
+   $node = node_form_submit_build_node($form, $form_state);
+-  $form_state['node_preview'] = node_preview($node);
++  // Clone $node immediately, as the object will be modified through the
++  // preview process. We need to preserve the original object for the node form.
++  $form_state['node_preview'] = node_preview(clone $node);
+   $form_state['rebuild'] = TRUE;
+ }
+ 

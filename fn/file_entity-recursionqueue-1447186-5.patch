@@ -1,0 +1,36 @@
+diff --git a/file_entity.field.inc b/file_entity.field.inc
+index 43016ff..5e5b025 100644
+--- a/file_entity.field.inc
++++ b/file_entity.field.inc
+@@ -78,12 +78,6 @@ function file_entity_field_formatter_view($entity_type, $entity, $field, $instan
+       $recursion_queue = array();
+     }
+ 
+-    // The recursion queue only needs to track files.
+-    if ($entity_type == 'file') {
+-      list($id) = entity_extract_ids($entity_type, $entity);
+-      $recursion_queue[$id] = $id;
+-    }
+-
+     // Prevent 'empty' fields from causing a WSOD.
+     $items = array_filter($items);
+ 
+@@ -91,11 +85,17 @@ function file_entity_field_formatter_view($entity_type, $entity, $field, $instan
+     // displayed, and which nodes will only be displayed as a title.
+     $files_display = array();
+     foreach ($items as $delta => $item) {
+-      if (!isset($recursion_queue[$item['fid']])) {
++      if (!isset($recursion_queue[$item['fid']][$view_mode])) {
+         $files_display[$item['fid']] = file_load($item['fid']);
+       }
+     }
+ 
++    // The recursion queue only needs to track files.
++    if ($entity_type == 'file') {
++      list($id) = entity_extract_ids($entity_type, $entity);
++      $recursion_queue[$id][$view_mode] = $id;
++    }
++
+     // Load and build the fully displayed nodes.
+     if ($files_display) {
+       foreach ($files_display as $fid => $file) {

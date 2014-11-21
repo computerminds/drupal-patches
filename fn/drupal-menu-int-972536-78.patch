@@ -1,0 +1,80 @@
+diff --git a/includes/menu.inc b/includes/menu.inc
+index 7423c99..812d0ac 100644
+--- a/includes/menu.inc
++++ b/includes/menu.inc
+@@ -2672,9 +2672,12 @@ function _menu_navigation_links_rebuild($menu) {
+     // check this for parents instead of querying the database.
+     $parent_candidates = array();
+     // Make sure no child comes before its parent.
+-    array_multisort($sort, SORT_NUMERIC, $menu_links);
++    // Previously, array_multisort was used but see
++    // http://bugs.php.net/bug.php?id=54980 why it has been removed.
++    asort($sort, SORT_NUMERIC);
+ 
+-    foreach ($menu_links as $key => $item) {
++    foreach (array_keys($sort) as $path) {
++      $item = $menu_links[$path];
+       $existing_item = db_select('menu_links')
+         ->fields('menu_links')
+         ->condition('link_path', $item['path'])
+@@ -2702,7 +2705,7 @@ function _menu_navigation_links_rebuild($menu) {
+         $item = _menu_link_build($item);
+         menu_link_save($item, $existing_item, $parent_candidates);
+         $parent_candidates[$item['mlid']] = $item;
+-        unset($menu_links[$key]);
++        unset($menu_links[$path]);
+       }
+     }
+   }
+@@ -3462,9 +3465,11 @@ function _menu_router_build($callbacks) {
+       $sort[$path] = $number_parts;
+     }
+   }
+-  array_multisort($sort, SORT_NUMERIC, $menu);
++  // Previously, array_multisort was used but see
++  // http://bugs.php.net/bug.php?id=54980 why it has been removed.
++  asort($sort, SORT_NUMERIC);
+   // Apply inheritance rules.
+-  foreach ($menu as $path => $v) {
++  foreach (array_keys($sort) as $path) {
+     $item = &$menu[$path];
+     if (!$item['_tab']) {
+       // Non-tab items.
+diff --git a/modules/simpletest/tests/menu_test.module b/modules/simpletest/tests/menu_test.module
+index 3046a04..cd94642 100644
+--- a/modules/simpletest/tests/menu_test.module
++++ b/modules/simpletest/tests/menu_test.module
+@@ -317,6 +317,33 @@ function menu_test_menu() {
+     'access callback' => TRUE,
+   );
+ 
++  // When the any property is first within a menu item, if we sort all the menu
++  // items by value we can end up with PHP notices when if tries to convert an
++  // object to an int. The access arguments and page arguments are allowed to
++  // contain objects, but we only test access arguments here. We deliberately
++  // set that case up here, so we can test that this is not what we're doing.
++  $common_properties = array(
++    'title' => 'An item with array and object callback arguments',
++    'page callback' => 'menu_test_callback',
++    'access callback' => TRUE,
++  );
++  // By adding four different menu items we ensure that we have each 'type' of
++  // our access arguments surrounded by the of 'type', this ensures that as
++  // least some kind of value sorting will occur between them.
++  $items['menu-test/callback-arguments1'] = array(
++    // This is an object that will get casted to an int (and cause a PHP notice).
++    'access arguments' => array((object) array('a', 'b')),
++  ) + $common_properties;
++  $items['menu-test/callback-arguments2'] = array(
++    'access arguments' => array(0),
++  ) + $common_properties;
++  $items['menu-test/callback-arguments3'] = array(
++    'access arguments' => array((object) array('c', 'd')),
++  ) + $common_properties;
++  $items['menu-test/callback-arguments4'] = array(
++    'access arguments' => array(1),
++  ) + $common_properties;
++
+   return $items;
+ }
+ 

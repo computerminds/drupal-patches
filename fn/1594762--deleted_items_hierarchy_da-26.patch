@@ -1,0 +1,13 @@
+diff --git a/includes/callback_add_hierarchy.inc b/includes/callback_add_hierarchy.inc
+index 4c0a441..88c1215 100644
+--- a/includes/callback_add_hierarchy.inc
++++ b/includes/callback_add_hierarchy.inc
+@@ -234,7 +234,7 @@ class SearchApiAlterAddHierarchy extends SearchApiAbstractAlterCallback {
+     $v = $wrapper->value(array('identifier' => TRUE));
+     if ($v && !isset($values[$v])) {
+       $values[$v] = $v;
+-      if (isset($wrapper->$property) && $wrapper->$property->value()) {
++      if (isset($wrapper->$property) && $wrapper->value() && $wrapper->$property->value()) {
+         $this->extractHierarchy($wrapper->$property, $property, $values);
+       }
+     }

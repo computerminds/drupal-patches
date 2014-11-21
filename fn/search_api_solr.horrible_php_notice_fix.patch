@@ -1,0 +1,13 @@
+diff --git service.inc service.inc
+index 8181bca..157c4b3 100644
+--- service.inc
++++ service.inc
+@@ -567,7 +567,7 @@ class SearchApiSolrService extends SearchApiAbstractService {
+       // properties. Mappings are provided for these properties in
+       // SearchApiSolrService::getFieldNames().
+       $result['id'] = $result['fields']['search_api_item_id'];
+-      $result['score'] = $result['fields']['search_api_relevance'];
++      $result['score'] = isset($result['fields']['search_api_relevance']) ? $result['fields']['search_api_relevance'] : NULL;
+ 
+       // Use the result's id as the array key. By default, 'id' is mapped to
+       // 'item_id' in SearchApiSolrService::getFieldNames().
