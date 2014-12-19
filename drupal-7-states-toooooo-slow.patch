@@ -1,33 +1,23 @@
 diff --git a/misc/states.js b/misc/states.js
-index 6d98da8..19d4086 100644
+index 6d98da8..1218169 100644
 --- a/misc/states.js
 +++ b/misc/states.js
-@@ -177,7 +177,13 @@ states.Dependent.prototype = {
+@@ -177,7 +177,8 @@ states.Dependent.prototype = {
  
        // By adding "trigger: true", we ensure that state changes don't go into
        // infinite loops.
 -      this.element.trigger({ type: 'state:' + this.state, value: value, trigger: true });
-+      var event = jQuery.Event('state:' + this.state);
-+      event.value = value;
-+      event.trigger = true;
-+      event.preventDefault();
-+      event.stopPropagation();
-+      this.element.trigger(event);
++      this.element.triggerHandler({ type: 'state:' + this.state, value: value, trigger: true });
 +      $(document).trigger({ type: 'state:' + this.state, value: value, trigger: true, states_target: this.element.get(0) });
      }
    },
  
-@@ -342,14 +348,26 @@ states.Trigger.prototype = {
+@@ -342,14 +343,16 @@ states.Trigger.prototype = {
        var value = valueFn.call(this.element, e);
        // Only trigger the event if the value has actually changed.
        if (oldValue !== value) {
 -        this.element.trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue });
-+        var event = jQuery.Event('state:' + this.state);
-+        event.value = value;
-+        event.oldValue = oldValue;
-+        event.preventDefault();
-+        event.stopPropagation();
-+        this.element.trigger(event);
++        this.element.triggerHandler({ type: 'state:' + this.state, value: value, oldValue: oldValue });
 +        $(document).trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue, states_target: this.element.get(0) });
          oldValue = value;
        }
@@ -36,17 +26,12 @@ index 6d98da8..19d4086 100644
      states.postponed.push($.proxy(function () {
        // Trigger the event once for initialization purposes.
 -      this.element.trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null });
-+      var event = jQuery.Event('state:' + this.state);
-+      event.value = oldValue;
-+      event.oldValue = null;
-+      event.preventDefault();
-+      event.stopPropagation();
-+      this.element.trigger(event);
++      this.element.triggerHandler({ type: 'state:' + this.state, value: oldValue, oldValue: null });
 +      $(document).trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null, states_target: this.element.get(0) });
      }, this));
    }
  };
-@@ -480,6 +498,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -480,6 +483,7 @@ $(document).bind('state:disabled', function(e) {
    // Only act when this change was triggered by a dependency and not by the
    // element monitoring itself.
    if (e.trigger) {
@@ -54,7 +39,7 @@ index 6d98da8..19d4086 100644
      $(e.target)
        .attr('disabled', e.value)
          .closest('.form-item, .form-submit, .form-wrapper').toggleClass('form-disabled', e.value)
-@@ -492,6 +511,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -492,6 +496,7 @@ $(document).bind('state:disabled', function(e) {
  
  $(document).bind('state:required', function(e) {
    if (e.trigger) {
@@ -62,7 +47,7 @@ index 6d98da8..19d4086 100644
      if (e.value) {
        $(e.target).closest('.form-item, .form-wrapper').find('label').append('<span class="form-required">*</span>');
      }
-@@ -503,18 +523,21 @@ $(document).bind('state:required', function(e) {
+@@ -503,18 +508,21 @@ $(document).bind('state:required', function(e) {
  
  $(document).bind('state:visible', function(e) {
    if (e.trigger) {
