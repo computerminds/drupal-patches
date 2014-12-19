@@ -1,23 +1,61 @@
 diff --git a/misc/states.js b/misc/states.js
-index 6d98da8..1218169 100644
+index 6d98da8..42ca6ec 100644
 --- a/misc/states.js
 +++ b/misc/states.js
-@@ -177,7 +177,8 @@ states.Dependent.prototype = {
+@@ -1,5 +1,17 @@
+ (function ($) {
+ 
++  // We define the following:
++  //   <  jQuery v1.9.1  OLD
++  //   >= jQuery v1.9.1  NEW
++  var jqueryversion = 'old';
++  var vernums = $.fn.jquery.split('.');
++  vernums[0] = parseInt(vernums[0], 10);
++  vernums[1] = parseInt(vernums[1], 10);
++  vernums[2] = parseInt(vernums[2], 10);
++  if (vernums[0] >= 2 || (vernums[0] == 1 && vernums[1] == 9 && vernums[2] >= 1)) {
++    jqueryversion = 'new';
++  }
++
+ /**
+  * The base States namespace.
+  *
+@@ -177,7 +189,18 @@ states.Dependent.prototype = {
  
        // By adding "trigger: true", we ensure that state changes don't go into
        // infinite loops.
 -      this.element.trigger({ type: 'state:' + this.state, value: value, trigger: true });
-+      this.element.triggerHandler({ type: 'state:' + this.state, value: value, trigger: true });
++      if (jqueryversion == 'new') {
++        this.element.triggerHandler({ type: 'state:' + this.state, value: value, trigger: true });
++      }
++      else {
++        var event = jQuery.Event('state:' + this.state);
++        event.value = value;
++        event.trigger = true;
++        event.preventDefault();
++        event.stopPropagation();
++        this.element.trigger(event);
++      }
 +      $(document).trigger({ type: 'state:' + this.state, value: value, trigger: true, states_target: this.element.get(0) });
      }
    },
  
-@@ -342,14 +343,16 @@ states.Trigger.prototype = {
+@@ -342,14 +365,36 @@ states.Trigger.prototype = {
        var value = valueFn.call(this.element, e);
        // Only trigger the event if the value has actually changed.
        if (oldValue !== value) {
 -        this.element.trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue });
-+        this.element.triggerHandler({ type: 'state:' + this.state, value: value, oldValue: oldValue });
++        if (jqueryversion == 'new') {
++          this.element.triggerHandler({ type: 'state:' + this.state, value: value, oldValue: oldValue });
++        }
++        else {
++          var event = jQuery.Event('state:' + this.state);
++          event.value = value;
++          event.oldValue = oldValue;
++          event.preventDefault();
++          event.stopPropagation();
++          this.element.trigger(event);
++        }
 +        $(document).trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue, states_target: this.element.get(0) });
          oldValue = value;
        }
@@ -26,12 +64,22 @@ index 6d98da8..1218169 100644
      states.postponed.push($.proxy(function () {
        // Trigger the event once for initialization purposes.
 -      this.element.trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null });
-+      this.element.triggerHandler({ type: 'state:' + this.state, value: oldValue, oldValue: null });
++      if (jqueryversion == 'new') {
++        this.element.triggerHandler({ type: 'state:' + this.state, value: oldValue, oldValue: null });
++      }
++      else {
++        var event = jQuery.Event('state:' + this.state);
++        event.value = oldValue;
++        event.oldValue = null;
++        event.preventDefault();
++        event.stopPropagation();
++        this.element.trigger(event);
++      }
 +      $(document).trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null, states_target: this.element.get(0) });
      }, this));
    }
  };
-@@ -480,6 +483,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -480,6 +525,7 @@ $(document).bind('state:disabled', function(e) {
    // Only act when this change was triggered by a dependency and not by the
    // element monitoring itself.
    if (e.trigger) {
@@ -39,7 +87,7 @@ index 6d98da8..1218169 100644
      $(e.target)
        .attr('disabled', e.value)
          .closest('.form-item, .form-submit, .form-wrapper').toggleClass('form-disabled', e.value)
-@@ -492,6 +496,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -492,6 +538,7 @@ $(document).bind('state:disabled', function(e) {
  
  $(document).bind('state:required', function(e) {
    if (e.trigger) {
@@ -47,7 +95,7 @@ index 6d98da8..1218169 100644
      if (e.value) {
        $(e.target).closest('.form-item, .form-wrapper').find('label').append('<span class="form-required">*</span>');
      }
-@@ -503,18 +508,21 @@ $(document).bind('state:required', function(e) {
+@@ -503,18 +550,21 @@ $(document).bind('state:required', function(e) {
  
  $(document).bind('state:visible', function(e) {
    if (e.trigger) {
