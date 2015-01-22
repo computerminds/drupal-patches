@@ -1,5 +1,5 @@
 diff --git a/misc/states.js b/misc/states.js
-index 6d98da8..42ca6ec 100644
+index 6d98da8..da27024 100644
 --- a/misc/states.js
 +++ b/misc/states.js
 @@ -1,5 +1,17 @@
@@ -20,7 +20,21 @@ index 6d98da8..42ca6ec 100644
  /**
   * The base States namespace.
   *
-@@ -177,7 +189,18 @@ states.Dependent.prototype = {
+@@ -109,6 +121,13 @@ states.Dependent.prototype = {
+         $(selector).bind('state:' + state, $.proxy(function (e) {
+           this.update(selector, state, e.value);
+         }, this));
++        // We also monitor the document monitor the state of the dependee.
++        $(document).bind('state:' + state, $.proxy(function (e) {
++          // Must have our special event, and we must match our selector.
++          if ((e.states_target != null) && ($(e.states_target).is(selector))) {
++            this.update(selector, state, e.value);
++          }
++        }, this));
+ 
+         // Make sure the event we just bound ourselves to is actually fired.
+         new states.Trigger({ selector: selector, state: state });
+@@ -177,7 +196,18 @@ states.Dependent.prototype = {
  
        // By adding "trigger: true", we ensure that state changes don't go into
        // infinite loops.
@@ -40,7 +54,7 @@ index 6d98da8..42ca6ec 100644
      }
    },
  
-@@ -342,14 +365,36 @@ states.Trigger.prototype = {
+@@ -342,14 +372,36 @@ states.Trigger.prototype = {
        var value = valueFn.call(this.element, e);
        // Only trigger the event if the value has actually changed.
        if (oldValue !== value) {
@@ -79,7 +93,7 @@ index 6d98da8..42ca6ec 100644
      }, this));
    }
  };
-@@ -480,6 +525,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -480,6 +532,7 @@ $(document).bind('state:disabled', function(e) {
    // Only act when this change was triggered by a dependency and not by the
    // element monitoring itself.
    if (e.trigger) {
@@ -87,7 +101,7 @@ index 6d98da8..42ca6ec 100644
      $(e.target)
        .attr('disabled', e.value)
          .closest('.form-item, .form-submit, .form-wrapper').toggleClass('form-disabled', e.value)
-@@ -492,6 +538,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -492,6 +545,7 @@ $(document).bind('state:disabled', function(e) {
  
  $(document).bind('state:required', function(e) {
    if (e.trigger) {
@@ -95,7 +109,7 @@ index 6d98da8..42ca6ec 100644
      if (e.value) {
        $(e.target).closest('.form-item, .form-wrapper').find('label').append('<span class="form-required">*</span>');
      }
-@@ -503,18 +550,21 @@ $(document).bind('state:required', function(e) {
+@@ -503,18 +557,21 @@ $(document).bind('state:required', function(e) {
  
  $(document).bind('state:visible', function(e) {
    if (e.trigger) {
