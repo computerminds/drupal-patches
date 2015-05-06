@@ -1,0 +1,22 @@
+diff --git a/securepages.module b/securepages.module
+index 36cc329..0885644 100644
+--- a/securepages.module
++++ b/securepages.module
+@@ -201,8 +201,8 @@ function securepages_goto($secure) {
+   else {
+     // Setting the redirect headers manually allows them to be cached.
+     drupal_add_http_header('Location', url($url['path'], $url));
+-    drupal_add_http_header('Status', '302 Found');
+-    print "302 Found";
++    drupal_add_http_header('Status', '301 Moved Permanently');
++    print "301 Moved Permanently";
+ 
+     // Store the response in the page cache.
+     if (variable_get('cache', 0) && ($cache = drupal_page_set_cache())) {
+@@ -398,4 +398,4 @@ function securepages_log($text, $path, $pattern = NULL) {
+     }
+     drupal_set_message(t('SP: ' . $text, $options), 'warning', FALSE);
+   }
+-}
+\ No newline at end of file
++}
