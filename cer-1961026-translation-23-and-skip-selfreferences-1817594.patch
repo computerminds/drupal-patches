@@ -1,0 +1,420 @@
+diff --git a/handler.inc b/handler.inc
+index 0cabe39..d637f25 100644
+--- a/handler.inc
++++ b/handler.inc
+@@ -50,9 +50,12 @@ interface CerHandlerInterface {
+    * @param object $entity
+    *  The remote entity.
+    *
++   * @param string $language
++   *  Optional language filter.
++   *
+    * @return boolean
+    */
+-  public function references($entity);
++  public function references($entity, $language = NULL);
+ 
+   /**
+    * Check if the local entity is referenced by $entity.
+@@ -60,9 +63,12 @@ interface CerHandlerInterface {
+    * @param object $entity
+    *  The remote entiy.
+    *
++   * @param string $language
++   *  Optional language filter.
++   *
+    * @return boolean
+    */
+-  public function referencedBy($entity);
++  public function referencedBy($entity, $language = NULL);
+   
+   /**
+    * Check if the remote entity can reference the local entity, and vice-versa.
+@@ -80,16 +86,22 @@ interface CerHandlerInterface {
+    * for any reason.
+    *
+    * @param object $entity
++   *
++   * @param string $language
++   *  Optional language filter.
+    */
+-  public function reference($entity);
++  public function reference($entity, $language = NULL);
+ 
+   /**
+    * Delete all references to the remote entity from the local entity,
+    * and delete reciprocal references from the remote entity.
+    *
+-   * @param object $entity.
++   * @param object $entity
++   *
++   * @param string $language
++   *  Optional language filter.
+    */
+-  public function dereference($entity);
++  public function dereference($entity, $language = NULL);
+ 
+ }
+ 
+@@ -120,6 +132,7 @@ abstract class CerHandlerBase {
+     $this->local = field_info_instance($keys[0], $keys[2], $keys[1]);
+     if ($this->local) {
+       $this->local['field'] = field_info_field($keys[2]);
++      $this->local['languages'] = field_available_languages($this->local['entity_type'], $this->local['field']);
+     }
+     else {
+       throw new CerException(t('Local field instance does not exist.'));
+@@ -128,6 +141,7 @@ abstract class CerHandlerBase {
+     $this->remote = field_info_instance($keys[3], $keys[5], $keys[4]);
+     if ($this->remote) {
+       $this->remote['field'] = field_info_field($keys[5]);
++      $this->remote['languages'] = field_available_languages($this->remote['entity_type'], $this->remote['field']);
+     }
+     else {
+       throw new CerException(t('Remote field instance does not exist.'));
+@@ -138,7 +152,7 @@ abstract class CerHandlerBase {
+ 
+ /**
+  * @class
+- * Generic CER handler with rudimentary language handling.
++ * Generic CER handler with language handling.
+  */
+ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+ 
+@@ -169,18 +183,28 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+   /**
+    * Implements CerHandlerInterface::insert().
+    */
+-  public function insert($ids = NULL) {
++  public function insert() {
+ 
+-    if (empty($ids)) {
+-      $entities = $this->getReferencedEntities();
+-    }
+-    else {
+-      $entities = entity_load($this->remote['entity_type'], $ids);
+-    }
++    // Load all referenced entities in one go.
++    if ($entities = $this->getLocalReferenceIDs()) {
++      // Always skip processing self-references.
++      if ($this->local['entity_type'] == $this->remote['entity_type'] && isset($entities[$this->id])) {
++        unset($entities[$this->id]);
++      }
+ 
+-    foreach ($entities as $referenced_entity) {
+-      $this->reference($referenced_entity);
+-      _cer_update($this->remote['entity_type'], $referenced_entity);
++      // Update references, one language at a time. Entities could be referenced
++      // in multiple languages so only save them after doing so.
++      foreach ($this->local['languages'] as $language) {
++        foreach ($this->getLocalReferenceIDs($language) as $referenced_entity_id) {
++          if (isset($entities[$referenced_entity_id])) {
++            $this->reference($entities[$referenced_entity_id], $language);
++          }
++        }
++      }
++
++      foreach ($entities as $referenced_entity) {
++        _cer_update($this->remote['entity_type'], $referenced_entity);
++      }
+     }
+   }
+ 
+@@ -190,19 +214,54 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+   public function update() {
+     $original = isset($this->entity->original) ? $this->entity->original : $this->entity;
+ 
+-    $deleted = array_diff($this->getReferenceIDs($original, $this->local), $this->getLocalReferenceIDs());
+-    if ($deleted) {
+-      $entities = entity_load($this->remote['entity_type'], $deleted);
+-      foreach ($entities as $referenced_entity) {
+-        $this->dereference($referenced_entity);
+-        _cer_update($this->remote['entity_type'], $referenced_entity);
++    // Only newly-referenced entities or those no longer referenced will need
++    // loading and saving. Identify them, load them all in one go, then update
++    // each one language at a time.
++    $deleted = $added = $ids = array();
++    foreach ($this->local['languages'] as $language) {
++      $deleted[$language] = array_diff($this->getReferenceIDs($original, $this->local, $language), $this->getLocalReferenceIDs($language));
++      if ($deleted[$language]) {
++        $ids = array_merge($ids, $deleted[$language]);
++      }
++
++      $added[$language] = array_diff($this->getLocalReferenceIDs($language), $this->getReferenceIDs($original, $this->local, $language));
++      if (!empty($added[$language])) {
++        $ids = array_merge($ids, $added[$language]);
+       }
+     }
+ 
+-    $added = array_diff($this->getLocalReferenceIDs(), $this->getReferenceIDs($original, $this->local));
++    // Always skip processing self-references.
++    if ($this->local['entity_type'] == $this->remote['entity_type']) {
++      $key = array_search($this->id, $ids);
++      if ($key !== FALSE) {
++        unset($ids[$key]);
++      }
++    }
++
++    if ($entities = entity_load($this->remote['entity_type'], $ids)) {
++      if ($deleted) {
++        foreach ($deleted as $language => $referenced_entity_ids) {
++          foreach ($referenced_entity_ids as $referenced_entity_id) {
++            if (isset($entities[$referenced_entity_id])) {
++              $this->dereference($entities[$referenced_entity_id], $language);
++            }
++          }
++        }
++      }
+ 
+-    if (!empty($added)) {
+-      $this->insert($added);
++      if ($added) {
++        foreach ($added as $language => $referenced_entity_ids) {
++          foreach ($referenced_entity_ids as $referenced_entity_id) {
++            if (isset($entities[$referenced_entity_id])) {
++              $this->reference($entities[$referenced_entity_id], $language);
++            }
++          }
++        }
++      }
++
++      foreach ($entities as $referenced_entity) {
++        _cer_update($this->remote['entity_type'], $referenced_entity);
++      }
+     }
+   }
+ 
+@@ -211,6 +270,11 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    */
+   public function delete() {
+     foreach ($this->getReferencedEntities() as $referenced_entity) {
++      // Always skip processing self-references.
++      if ($this->local['entity_type'] == $this->remote['entity_type'] && $referenced_entity == $this->id) {
++        continue;
++      }
++
+       $this->dereference($referenced_entity);
+       _cer_update($this->remote['entity_type'], $referenced_entity);
+     }
+@@ -219,15 +283,15 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+   /**
+    * Implements CerHandlerInterface::references().
+    */  
+-  public function references($entity) {
+-    return in_array($this->getRemoteEntityID($entity), $this->getLocalReferenceIDs());
++  public function references($entity, $language = NULL) {
++    return in_array($this->getRemoteEntityID($entity), $this->getLocalReferenceIDs($language));
+   }
+ 
+   /**
+    * Implements CerHandlerInterface::referencedBy().
+    */
+-  public function referencedBy($entity) {
+-    return in_array($this->id, $this->getRemoteReferenceIDs($entity));
++  public function referencedBy($entity, $language = NULL) {
++    return in_array($this->id, $this->getRemoteReferenceIDs($entity, $language));
+   }
+ 
+   /**
+@@ -259,17 +323,17 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+   /**
+    * Implements CerHandlerInterface::reference().
+    */
+-  public function reference($entity) {
++  public function reference($entity, $language = NULL) {
+     if ($this->referenceable($entity)) {
+       try {
+-        $this->addReferenceTo($entity);
++        $this->addReferenceTo($entity, $language);
+       }
+       catch (CerException $e) {
+         // Fail silently
+       }
+     
+       try {
+-        $this->addReferenceFrom($entity);
++        $this->addReferenceFrom($entity, $language);
+       }
+       catch (CerException $e) {
+         // Fail silently
+@@ -291,28 +355,34 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+   /**
+    * Implements CerHandlerInterface::dereference().
+    */
+-  public function dereference($entity) {
+-    if ($this->references($entity)) {
+-      $id = $this->getRemoteEntityID($entity);
++  public function dereference($entity, $language = NULL) {
++    if (isset($language)) {
++      if ($this->references($entity, $language)) {
++        $id = $this->getRemoteEntityID($entity);
+ 
+-      foreach ($this->entity->{$this->local['field_name']} as $language => $references) {
+-        foreach ($references as $delta => $reference) {
++        foreach ($this->entity->{$this->local['field_name']}[$language] as $delta => $reference) {
+           if ($reference['target_id'] == $id) {
+             unset($this->entity->{$this->local['field_name']}[$language][$delta]);
+           }
+         }
+       }
+-    }
+ 
+-    if ($this->referencedBy($entity)) {
+-      foreach ($entity->{$this->remote['field_name']} as $language => $references) {
+-        foreach ($references as $delta => $reference) {
++      if ($this->referencedBy($entity, $language)) {
++        foreach ($entity->{$this->remote['field_name']}[$language] as $delta => $reference) {
+           if ($reference['target_id'] == $this->id) {
+             unset($entity->{$this->remote['field_name']}[$language][$delta]);
+           }
+         }
+       }
+     }
++    else {
++      // Clear the reference in all possible languages
++      $languages = array_merge($this->local['languages'], $this->remote['languages']);
++      
++      foreach (array_unique($languages) as $language) {
++        $this->dereference($entity, $language);
++      }
++    }
+   }
+ 
+   /**
+@@ -323,18 +393,19 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    * @param object $entity
+    *  The remote entity.
+    */ 
+-  protected function addReferenceFrom($entity) {
+-    if ($this->referencedBy($entity)) {
++  protected function addReferenceFrom($entity, $language) {
++    if (empty($language)) {
++      $language = $this->getReferenceLanguage($this->local['entity_type'], $this->entity, $this->remote['languages']);
++    }
++
++    if ($this->referencedBy($entity, $language)) {
+       throw new CerException(t('Cannot create duplicate reference from remote entity.'));
+     }
+-    elseif ($this->filled($this->getRemoteReferenceIDs($entity), $this->remote['field'])) {
++    elseif ($this->filled($this->getRemoteReferenceIDs($entity, $language), $this->remote['field'])) {
+       throw new CerException(t('Remote field cannot support any more references.'));
+     }
+     else {
+-      $languages = field_available_languages($this->remote['entity_type'], $this->remote['field']);
+-      foreach ($languages as $language) {
+-        $entity->{$this->remote['field_name']}[$language][] = array('target_id' => $this->id);
+-      }
++      $entity->{$this->remote['field_name']}[$language][] = array('target_id' => $this->id);
+     }
+   }
+ 
+@@ -346,20 +417,21 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    * @param object $entity
+    *  The remote entity.
+    */
+-  protected function addReferenceTo($entity) {
++  protected function addReferenceTo($entity, $language = NULL) {
+     $id = $this->getRemoteEntityID($entity);
+ 
+-    if ($this->references($entity)) {
++    if (empty($language)) {
++      $language = $this->getReferenceLanguage($this->remote['entity_type'], $entity, $this->local['languages']);
++    }
++
++    if ($this->references($entity, $language)) {
+       throw new CerException(t('Cannot create duplicate reference to remote entity.'));
+     }
+-    elseif ($this->filled($this->getLocalReferenceIDs(), $this->local['field'])) {
++    elseif ($this->filled($this->getLocalReferenceIDs($language), $this->local['field'])) {
+       throw new CerException(t('Local field cannot support any more references.'));
+     }
+     else {
+-      $languages = field_available_languages($this->local['entity_type'], $this->local['field']);
+-      foreach ($languages as $language) {
+-        $this->entity->{$this->local['field_name']}[$language][] = array('target_id' => $id);
+-      }
++      $this->entity->{$this->local['field_name']}[$language][] = array('target_id' => $id);
+     }
+   }
+ 
+@@ -385,8 +457,8 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    *  Array of fully loaded referenced entities keyed by ID, or empty
+    *  array if nothing has been referenced.
+    */
+-  protected function getReferencedEntities() {
+-    $IDs = $this->getLocalReferenceIDs();
++  protected function getReferencedEntities($language = NULL) {
++    $IDs = $this->getLocalReferenceIDs($language);
+     return $IDs ? entity_load($this->remote['entity_type'], $IDs) : array();
+   }
+ 
+@@ -396,8 +468,8 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    * @return array
+    *  Array of entity IDs, empty array if there are no references.
+    */
+-  protected function getLocalReferenceIDs() {
+-    return $this->getReferenceIDs($this->entity, $this->local);
++  protected function getLocalReferenceIDs($language = NULL) {
++    return $this->getReferenceIDs($this->entity, $this->local, $language);
+   }
+ 
+   /**
+@@ -409,8 +481,17 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    * @return array
+    *  Array of entity IDs, empty array if there are no references.
+    */
+-  protected function getRemoteReferenceIDs($entity) {
+-    return $this->getReferenceIDs($entity, $this->remote);
++  protected function getRemoteReferenceIDs($entity, $language = NULL) {
++    return $this->getReferenceIDs($entity, $this->remote, $language);
++  }
++  
++  protected function getReferenceLanguage($entity_type, $entity, $valid_languages) {
++    // entity_language() was introduced in Drupal 7.15, so if we're using an older
++    // version, just default to LANGUAGE_NONE.
++    if (function_exists('entity_language')) {
++      $language = entity_language($entity_type, $entity);
++    }
++    return (isset($language) ? (in_array($language, $valid_languages) ? $language : LANGUAGE_NONE) : LANGUAGE_NONE);
+   }
+ 
+   /**
+@@ -425,7 +506,7 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    *
+    * @return boolean
+    */
+-  private function filled($references, $field) {
++  protected function filled($references, $field) {
+     return $field['cardinality'] != FIELD_CARDINALITY_UNLIMITED && sizeof($references) >= $field['cardinality'];
+   }
+ 
+@@ -442,16 +523,23 @@ class CerHandler extends CerHandlerBase implements CerHandlerInterface {
+    *  Array of unique IDs, empty if there are no references or the field
+    *  does not exist on $entity.
+    */
+-  private function getReferenceIDs($entity, $field) {
++  protected function getReferenceIDs($entity, $field, $language = NULL) {
+     $IDs = array();
+-    if (isset($entity->{$field['field_name']})) {
+-      foreach ($entity->{$field['field_name']} as $references) {
+-        foreach ($references as $reference) {
++
++    if (empty($language)) {
++      foreach ($field['languages'] as $language) {
++        $IDs = array_merge($IDs, $this->getReferenceIDs($entity, $field, $language));
++      }
++    }
++    elseif (isset($entity->{$field['field_name']}[$language])) {
++      foreach ($entity->{$field['field_name']}[$language] as $reference) {
++        if ($reference['target_id']) {
+           $IDs[] = $reference['target_id'];
+         }
+       }
+     }
+-    return array_unique(array_filter($IDs));
++
++    return array_unique($IDs);
+   }
+ 
+ }
+\ No newline at end of file
