@@ -183,6 +183,32 @@ index cbad4a7..9c0ce56 100644
  
  ; Views handlers
  files[] = views/handlers/filter_language.inc
+diff --git a/language_hierarchy.install b/language_hierarchy.install
+index df08cef..61476d9 100644
+--- a/language_hierarchy.install
++++ b/language_hierarchy.install
+@@ -24,6 +24,10 @@ function language_hierarchy_install() {
+     'description' => 'Code of parent language.',
+   ));
+   drupal_static_reset('language_list');
++
++  // Ensure that language_hierarchy_language_init() runs before
++  // i18n_variable_language_init().
++  db_query("UPDATE {system} SET weight = -901 WHERE name = 'language_hierarchy' AND type = 'module'");
+ }
+ 
+ /**
+@@ -33,3 +37,10 @@ function language_hierarchy_uninstall() {
+   db_drop_field('languages', 'parent');
+   drupal_static_reset('language_list');
+ }
++
++/**
++ * Update module weight so that strings are initialised early during bootstraps.
++ */
++function language_hierarchy_update_7001() {
++  db_query("UPDATE {system} SET weight = -901 WHERE name = 'language_hierarchy' AND type = 'module'");
++}
 diff --git a/language_hierarchy.module b/language_hierarchy.module
 index 96da127..f40d65b 100644
 --- a/language_hierarchy.module
