@@ -1,5 +1,5 @@
 diff --git a/handler.inc b/handler.inc
-index 0cabe39..d637f25 100644
+index 0cabe39..a76ecea 100644
 --- a/handler.inc
 +++ b/handler.inc
 @@ -50,9 +50,12 @@ interface CerHandlerInterface {
@@ -95,7 +95,7 @@ index 0cabe39..d637f25 100644
 -      $entities = entity_load($this->remote['entity_type'], $ids);
 -    }
 +    // Load all referenced entities in one go.
-+    if ($entities = $this->getLocalReferenceIDs()) {
++    if ($entities = $this->getReferencedEntities()) {
 +      // Always skip processing self-references.
 +      if ($this->local['entity_type'] == $this->remote['entity_type'] && isset($entities[$this->id])) {
 +        unset($entities[$this->id]);
