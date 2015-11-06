@@ -109,7 +109,6 @@ index 6d98da8..da27024 100644
      if (e.value) {
        var $label = $(e.target).closest('.form-item, .form-wrapper').find('label');
        // Avoids duplicate required markers on initialization.
-
 @@ -503,18 +557,21 @@ $(document).bind('state:required', function(e) {
  
  $(document).bind('state:visible', function(e) {
