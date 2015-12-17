@@ -1,0 +1,149 @@
+diff --git a/commerce_stock_notifications.info b/commerce_stock_notifications.info
+index 3a77f4a..6b15a97 100644
+--- a/commerce_stock_notifications.info
++++ b/commerce_stock_notifications.info
+@@ -6,7 +6,7 @@ version = 7.x-1.x
+ configure = admin/commerce/config/stock/stock-notifications
+ 
+ dependencies[] = commerce
+-dependencies[] = commerce_ss
++dependencies[] = commerce_nss
+ dependencies[] = commerce_stock
+ dependencies[] = rules
+ 
+diff --git a/commerce_stock_notifications.install b/commerce_stock_notifications.install
+index 86f665d..b53f473 100644
+--- a/commerce_stock_notifications.install
++++ b/commerce_stock_notifications.install
+@@ -51,6 +51,12 @@ function commerce_stock_notifications_schema(){
+           'length' => 60,
+           'not null' => TRUE,
+         ),
++        'stock_field' => array(
++          'description' => 'Stock field for the relevant warehouse.',
++          'type' => 'varchar',
++          'length' => 60,
++          'not null' => TRUE,
++        ),
+         'submit_time' => array(
+           'description' => 'Time the notification request was submitted.',
+           'type' => 'int',
+diff --git a/commerce_stock_notifications.module b/commerce_stock_notifications.module
+index 458d6f3..e31bfc2 100644
+--- a/commerce_stock_notifications.module
++++ b/commerce_stock_notifications.module
+@@ -86,12 +86,15 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
+ 
+   // We care about stock if the stock field exists, AND stock is not being
+   // disabled by the override option.
+-  $stock_managed = (commerce_ss_product_type_enabled($product->type) && commerce_ss_product_not_disabled_by_override($product));
++  $delivery_country = travall_delivery_country_get_country();
++  $warehouse = travall_delivery_country_get_warehouse($delivery_country);
++  $stock_managed = (commerce_nss_product_type_enabled($product->type, $warehouse) && commerce_nss_product_not_disabled_by_override($product));
+ 
+   // Adds the subscribing form under at the bottom of the cart form in order to
+   // let the user register to be notified.
+-  if ($stock_managed && $product_wrapper->commerce_stock->value() <= '0.00') {
+-    $form['commerce_stock_notifications'] = commerce_stock_notifications_customer_form($form_state, $form_state['line_item']->data['context']['display_path']);
++  $stock_field = 'commerce_stock_' . strtolower($warehouse);
++  if ($stock_managed && $product_wrapper->{$stock_field}->value() <= '0.00') {
++    $form['commerce_stock_notifications'] = commerce_stock_notifications_customer_form($form_state, $form_state['line_item']->data['context']['display_path'], $stock_field);
+     $form['commerce_stock_notifications']['#weight'] = 100;
+     $form['#validate'] = array();
+     $form['#submit'] = array('commerce_stock_notifications_customer_form_submit');
+@@ -102,11 +105,12 @@ function commerce_stock_notifications_form_commerce_cart_add_to_cart_form_alter(
+  * Custom form to let customers register their email address to be notified
+  * when product is back in stock.
+  */
+-function commerce_stock_notifications_customer_form(&$form_state, $context = NULL) {
++function commerce_stock_notifications_customer_form(&$form_state, $context = NULL, $stock_field) {
+   global $user;
+   $config = variable_get('commerce_stock_notifications', commerce_stock_notification_default_settings());
+   $form_state['notify']['config'] = $config;
+   $form_state['notify']['context'] = $context;
++  $form_state['notify']['stock_field'] = $stock_field;
+ 
+   $form['commerce_stock_notifications'] = array(
+     '#type' => 'fieldset',
+@@ -140,6 +144,7 @@ function commerce_stock_notifications_customer_form_submit($form, $form_state) {
+   $notify = $form_state['notify'];
+   $config = $notify['config'];
+   $context = $notify['context'];
++  $stock_field = $notify['stock_field'];
+   $product_id = $form_state['input']['product_id'];
+   $email = $form_state['values']['notify_email'];
+ 
+@@ -154,6 +159,7 @@ function commerce_stock_notifications_customer_form_submit($form, $form_state) {
+       'email' => $email,
+       'submit_time' => REQUEST_TIME,
+       'context' => $context,
++      'stock_field' => $stock_field,
+     );
+     drupal_write_record('commerce_stock_notifications', $record);
+     drupal_set_message(t('@success_message', array('@success_message' => $config['success_message'])));
+@@ -211,9 +217,13 @@ function commerce_stock_notifications_cron() {
+ 
+   $queue = DrupalQueue::get('commerce_stock_notifications');
+   if ($queue->numberOfItems() == 0) {
+-    $query = db_select('commerce_stock_notifications', 'csn');
+-    $query->join('field_data_commerce_stock', 'fdcs', 'csn.product_id = fdcs.entity_id');
+-    $query->fields('csn', array(
++    // Go over each warehouse separately.
++    $warehouses = travall_delivery_country_list_warehouses();
++    foreach ($warehouses as $warehouse) {
++      $warehouse = strtolower($warehouse);
++      $query = db_select('commerce_stock_notifications', 'csn');
++      $query->join("field_data_commerce_stock_$warehouse", 'fdcs', 'csn.product_id = fdcs.entity_id');
++      $query->fields('csn', array(
+         'email',
+         'product_id',
+         'notification_id',
+@@ -221,15 +231,18 @@ function commerce_stock_notifications_cron() {
+         'context',
+         'force_send',
+       ))
+-      ->isNull('csn.sent_time')
+-      ->condition(db_or()->condition('fdcs.commerce_stock_value', 0, '>')->condition('csn.force_send', 1))
+-      ->orderBy('submit_time', 'ASC')
+-      ->range(0, 500);
++        ->condition('csn.stock_field', 'commerce_stock_' . $warehouse)
++        ->isNull('csn.sent_time')
++        ->condition(db_or()->condition('fdcs.commerce_stock_' . $warehouse . '_value', 0, '>')->condition('csn.force_send', 1))
++        ->orderBy('submit_time', 'ASC')
++        ->range(0, 500);
+ 
+-    $result = $query->execute();
+-    foreach ($result as $record) {
+-      $queue->createItem($record);
++      $result = $query->execute();
++      foreach ($result as $record) {
++        $queue->createItem($record);
++      }
+     }
++
+   }
+ }
+ 
+diff --git a/commerce_stock_notifications.variable.inc b/commerce_stock_notifications.variable.inc
+new file mode 100644
+index 0000000..f74066e
+--- /dev/null
++++ b/commerce_stock_notifications.variable.inc
+@@ -0,0 +1,16 @@
++<?php
++
++
++/**
++ * Implements hook_variable_info().
++ */
++function commerce_stock_notifications_variable_info($options) {
++  $variables['commerce_stock_notifications'] = array(
++    'type' => 'array',
++    'title' => t('Configure stock notification settings', array(), $options),
++    'default' => commerce_stock_notification_default_settings(),
++    'localize' => TRUE,
++  );
++
++  return $variables;
++}
+\ No newline at end of file
