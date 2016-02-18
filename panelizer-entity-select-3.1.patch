@@ -1,0 +1,31 @@
+diff --git a/panelizer.install b/panelizer.install
+index 3130b2c..19609ee 100755
+--- a/panelizer.install
++++ b/panelizer.install
+@@ -248,6 +248,13 @@ function panelizer_schema_3() {
+   return $schema;
+ }
+ 
++function panelizer_schema_5() {
++  $schema = panelizer_schema_3();
++  $schema['panelizer_entity']['indexes']['revision_id'] = array('revision_id');
++
++  return $schema;
++}
++
+ /**
+  * Implements hook_install().
+  */
+diff --git a/plugins/entity/PanelizerEntityDefault.class.php b/plugins/entity/PanelizerEntityDefault.class.php
+index 797b35e..c83ab46 100755
+--- a/plugins/entity/PanelizerEntityDefault.class.php
++++ b/plugins/entity/PanelizerEntityDefault.class.php
+@@ -718,7 +718,7 @@ abstract class PanelizerEntityDefault implements PanelizerEntityInterface {
+ 
+     // Load all the panelizers associated with the list of entities.
+     if ($this->supports_revisions) {
+-      $result = db_query("SELECT * FROM {panelizer_entity} WHERE entity_type = '$this->entity_type' AND entity_id IN (:ids) AND revision_id IN (:vids)", array(':ids' => $ids, ':vids' => $vids));
++      $result = db_query("SELECT * FROM {panelizer_entity} WHERE entity_type = :entity_type AND revision_id IN (:vids)", array(':entity_type' => $this->entity_type, ':vids' => $vids));
+     }
+     else {
+       $result = db_query("SELECT * FROM {panelizer_entity} WHERE entity_type = '$this->entity_type' AND entity_id IN (:ids)", array(':ids' => $ids));
