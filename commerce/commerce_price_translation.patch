@@ -1,0 +1,13 @@
+diff --git a/modules/price/commerce_price.module b/modules/price/commerce_price.module
+index 59e32c1..267641d 100644
+--- a/modules/price/commerce_price.module
++++ b/modules/price/commerce_price.module
+@@ -535,7 +535,7 @@ function theme_commerce_price_formatted_components($variables) {
+     $rows[] = array(
+       'data' => array(
+         array(
+-          'data' => $component['title'],
++          'data' => t($component['title']),
+           'class' => array('component-title'),
+         ),
+         array(
