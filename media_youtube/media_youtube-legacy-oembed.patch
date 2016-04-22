@@ -1,0 +1,119 @@
+diff --git a/MediaYouTubeStreamWrapper.inc b/MediaYouTubeStreamWrapper.inc
+deleted file mode 100644
+index 76d6f22..0000000
+--- a/MediaYouTubeStreamWrapper.inc
++++ /dev/null
+@@ -1,8 +0,0 @@
+-<?php
+-
+-/**
+- * @todo Remove once usage statistics indicate that virtually everyone has
+- *   updated to 1.0-alpha5 or later. This is retained until then, so that
+- *   update.php can bootstrap.
+- */
+-include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_youtube') . '/includes/includes/MediaYouTubeStreamWrapper.inc';
+diff --git a/includes/MediaInternetYouTubeHandler.inc b/includes/MediaInternetYouTubeHandler.inc
+index 8737938..2c1d6a4 100644
+--- a/includes/MediaInternetYouTubeHandler.inc
++++ b/includes/MediaInternetYouTubeHandler.inc
+@@ -23,11 +23,18 @@ class MediaInternetYouTubeHandler extends MediaInternetBaseHandler {
+   }
+ 
+   public function valid_id($id) {
+-    $url = 'http://gdata.youtube.com/feeds/api/videos/'. $id;
+-    $response = drupal_http_request($url, array('method' => 'HEAD'));
+-    if ($response->code != 200) {
+-      throw new MediaInternetValidationException(t('The YouTube video ID is invalid or the video was deleted.'));
++    $uri = file_stream_wrapper_uri_normalize('youtube://v/' . check_plain($id));
++    $external_url = file_create_url($uri);
++    $oembed_url = url('http://www.youtube.com/oembed', array('query' => array('url' => $external_url, 'format' => 'json')));
++    $response = drupal_http_request($oembed_url, array('method' => 'HEAD'));
++
++    if ($response->code == 401) {
++      throw new MediaInternetValidationException('Embedding has been disabled for this YouTube video.');
+     }
++    elseif ($response->code != 200) {
++      throw new MediaInternetValidationException('The YouTube video ID is invalid or the video was deleted.');
++    }
++
+     return TRUE;
+   }
+ 
+diff --git a/includes/themes/media_youtube.theme.inc b/includes/themes/media_youtube.theme.inc
+index dc53757..8e36d1f 100644
+--- a/includes/themes/media_youtube.theme.inc
++++ b/includes/themes/media_youtube.theme.inc
+@@ -98,12 +98,17 @@ function media_youtube_preprocess_media_youtube_video(&$variables) {
+   // For users with JavaScript, these object and embed tags will be replaced
+   // by an iframe, so that we can support users without Flash.
+   $variables['output'] = <<<OUTPUT
+-    <object width="{$variables['width']}" height="{$variables['height']}">
+-      <param name="movie" value="{$variables['url']}"></param>
++<!--[if !IE]> -->
++  <object type="application/x-shockwave-flash" data="{$variables['url']}" width="{$variables['width']}" height="{$variables['height']}">
++<!-- <![endif]-->
++<!--[if IE]>
++  <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0" width="{$variables['width']}" height="{$variables['height']}">
++    <param name="movie" value="{$variables['url']}" />
+       <param name="allowFullScreen" value="{$variables['fullscreen']}"></param>
+       <param name="wmode" value="{$variables['wmode']}" />
+-      <embed src="{$variables['url']}" type="application/x-shockwave-flash" width="{$variables['width']}" height="{$variables['height']}" allowfullscreen="{$variables['fullscreen']}" wmode="{$variables['wmode']}"></embed>
+-    </object>
++<!-->
++  </object>
++<!-- <![endif]-->
+ OUTPUT;
+ }
+ 
+diff --git a/js/media_youtube.js b/js/media_youtube.js
+index 2d8b657..0027002 100644
+--- a/js/media_youtube.js
++++ b/js/media_youtube.js
+@@ -52,7 +52,7 @@ Drupal.media_youtube.insertEmbed = function (embed_id) {
+   // Replace the object embed with YouTube's iframe. This isn't done by the
+   // theme function because YouTube doesn't have a no-JS or no-Flash fallback.
+   var video = $('<iframe class="youtube-player" type="text/html" frameborder="0"></iframe>');
+-  var src = 'http://www.youtube.com/embed/' + settings.video_id;
++  var src = '//www.youtube.com/embed/' + settings.video_id;
+ 
+   // Allow other modules to modify the video settings.
+   settings.options = settings.options || {};
+@@ -104,4 +104,4 @@ Drupal.media_youtube.resizeEmbed = function () {
+     .width(context.width());
+ };
+ 
+-})(jQuery);
+\ No newline at end of file
++})(jQuery);
+diff --git a/media_youtube.install b/media_youtube.install
+index dc6cad3..4374a08 100644
+--- a/media_youtube.install
++++ b/media_youtube.install
+@@ -106,4 +106,3 @@ function media_youtube_update_7011() {
+ function media_youtube_update_7012() {
+   return array();
+ }
+-
+diff --git a/media_youtube.module b/media_youtube.module
+index 319de2a..aca554e 100644
+--- a/media_youtube.module
++++ b/media_youtube.module
+@@ -30,13 +30,12 @@ include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_youtube') . '/
+  * Implements hook_media_internet_providers().
+  */
+ function media_youtube_media_internet_providers() {
+-  $path = drupal_get_path('module', 'media_youtube');
+-  return array(
+-    'MediaInternetYouTubeHandler' => array(
+-      'title' => 'youtube',
+-      'image' => $path . '/images/stream-youtube.png'
+-    ),
++  $info['MediaInternetYouTubeHandler'] = array(
++    'title' => t('YouTube'),
++    'image' => drupal_get_path('module', 'media_youtube') . '/images/stream-youtube.png',
+   );
++
++  return $info;
+ }
+ 
+ /**
