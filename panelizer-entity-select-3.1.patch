@@ -1,7 +1,16 @@
 diff --git a/panelizer.install b/panelizer.install
-index 3130b2c..19609ee 100755
+index 3130b2c..9c56409 100755
 --- a/panelizer.install
 +++ b/panelizer.install
+@@ -10,7 +10,7 @@
+ function panelizer_schema() {
+   // This should always point to our 'current' schema. This makes it
+   // relatively easy to keep a record of schema as we make changes to it.
+-  return panelizer_schema_3();
++  return panelizer_schema_5();
+ }
+ 
+ /**
 @@ -248,6 +248,13 @@ function panelizer_schema_3() {
    return $schema;
  }
