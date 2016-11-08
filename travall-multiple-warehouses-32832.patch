@@ -74,9 +74,9 @@ index 458d6f3..e31bfc2 100644
    $email = $form_state['values']['notify_email'];
  
 @@ -154,6 +159,7 @@ function commerce_stock_notifications_customer_form_submit($form, $form_state) {
+       'email' => $email,
        'submit_time' => REQUEST_TIME,
        'context' => $context,
-       'language' => $lang,
 +      'stock_field' => $stock_field,
      );
      drupal_write_record('commerce_stock_notifications', $record);
