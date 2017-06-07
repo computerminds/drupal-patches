@@ -1,0 +1,113 @@
+diff --git a/includes/common.inc b/includes/common.inc
+index a32930a..a58ba84 100644
+--- a/includes/common.inc
++++ b/includes/common.inc
+@@ -3992,54 +3992,28 @@ function drupal_html_id($id) {
+   }
+   $seen_ids_init = &$drupal_static_fast['seen_ids_init'];
+   if (!isset($seen_ids_init)) {
+-    // Ideally, Drupal would provide an API to persist state information about
+-    // prior page requests in the database, and we'd be able to add this
+-    // function's $seen_ids static variable to that state information in order
+-    // to have it properly initialized for this page request. However, no such
+-    // page state API exists, so instead, ajax.js adds all of the in-use HTML
+-    // IDs to the POST data of Ajax submissions. Direct use of $_POST is
+-    // normally not recommended as it could open up security risks, but because
+-    // the raw POST data is cast to a number before being returned by this
+-    // function, this usage is safe.
+-    if (empty($_POST['ajax_html_ids'])) {
+-      $seen_ids_init = array();
++    // A number of contrib modules were relying on being able to unset
++    // $_POST['ajax_html_ids'] to not trigger the unique ID functionality
++    // on AJAX requests, so we still check that variable and respond as they
++    // would expect.
++    if (empty($_POST['ajax_html_ids']) || empty($_POST['ajax_html_ids_counter'])) {
++      $seen_ids_init = 1;
+     }
+     else {
+-      // This function ensures uniqueness by appending a counter to the base id
+-      // requested by the calling function after the first occurrence of that
+-      // requested id. $_POST['ajax_html_ids'] contains the ids as they were
+-      // returned by this function, potentially with the appended counter, so
+-      // we parse that to reconstruct the $seen_ids array.
+-      if (isset($_POST['ajax_html_ids'][0]) && strpos($_POST['ajax_html_ids'][0], ',') === FALSE) {
+-        $ajax_html_ids = $_POST['ajax_html_ids'];
++      if (is_numeric($_POST['ajax_html_ids_counter'])) {
++        $seen_ids_init = $_POST['ajax_html_ids_counter'];
+       }
+       else {
+-        // jquery.form.js may send the server a comma-separated string as the
+-        // first element of an array (see http://drupal.org/node/1575060), so
+-        // we need to convert it to an array in that case.
+-        $ajax_html_ids = explode(',', $_POST['ajax_html_ids'][0]);
+-      }
+-      foreach ($ajax_html_ids as $seen_id) {
+-        // We rely on '--' being used solely for separating a base id from the
+-        // counter, which this function ensures when returning an id.
+-        $parts = explode('--', $seen_id, 2);
+-        if (!empty($parts[1]) && is_numeric($parts[1])) {
+-          list($seen_id, $i) = $parts;
+-        }
+-        else {
+-          $i = 1;
+-        }
+-        if (!isset($seen_ids_init[$seen_id]) || ($i > $seen_ids_init[$seen_id])) {
+-          $seen_ids_init[$seen_id] = $i;
+-        }
++        $seen_ids_init = 1;
+       }
+     }
+   }
+   if (!isset($drupal_static_fast['seen_ids'])) {
+-    $drupal_static_fast['seen_ids'] = &drupal_static(__FUNCTION__, $seen_ids_init);
++    $drupal_static_fast['seen_ids'] = &drupal_static(__FUNCTION__, array());
+   }
+   $seen_ids = &$drupal_static_fast['seen_ids'];
+ 
++
+   $id = strtr(drupal_strtolower($id), array(' ' => '-', '_' => '-', '[' => '-', ']' => ''));
+ 
+   // As defined in http://www.w3.org/TR/html4/types.html#type-name, HTML IDs can
+@@ -4057,11 +4031,17 @@ function drupal_html_id($id) {
+   // the base ID. Requiring a unique delimiter helps ensure that we really do
+   // return unique IDs and also helps us re-create the $seen_ids array during
+   // Ajax requests.
++  // We use the $seen_ids_init value as a starting point for the counters,
++  // if it's non-unitary, then initialize the counters from that value.
++  if (($seen_ids_init != 1) && !isset($seen_ids[$id])) {
++    $seen_ids[$id] = $seen_ids_init;
++  }
++
+   if (isset($seen_ids[$id])) {
+     $id = $id . '--' . ++$seen_ids[$id];
+   }
+   else {
+-    $seen_ids[$id] = 1;
++    $seen_ids[$id] = $seen_ids_init;
+   }
+ 
+   return $id;
+diff --git a/misc/ajax.js b/misc/ajax.js
+index c944ebb..37cce46 100644
+--- a/misc/ajax.js
++++ b/misc/ajax.js
+@@ -320,9 +320,17 @@ Drupal.ajax.prototype.beforeSerialize = function (element, options) {
+ 
+   // Prevent duplicate HTML ids in the returned markup.
+   // @see drupal_html_id()
+-  options.data['ajax_html_ids[]'] = [];
++  options.data['ajax_html_ids[]'] = 1;
++  options.data['ajax_html_ids_counter'] = 1;
+   $('[id]').each(function () {
+-    options.data['ajax_html_ids[]'].push(this.id);
++    var $this = $(this);
++    // If this ID already has a counter, then ensure that the counter is at least that.
++    if ((typeof $this.attr('id') === 'string') && ($this.attr('id').indexOf('--') != -1)) {
++      var potentialCounter = this.id.substring(this.id.indexOf('--') + 2);
++      if ((typeof potentialCounter === 'number' || typeof potentialCounter === 'string') && potentialCounter !== '' && !isNaN(potentialCounter)) {
++        options.data['ajax_html_ids_counter'] = Math.max(options.data['ajax_html_ids_counter'], potentialCounter);
++      }
++    }
+   });
+ 
+   // Allow Drupal to return new JavaScript and CSS files to load without
