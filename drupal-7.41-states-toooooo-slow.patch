@@ -1,5 +1,5 @@
 diff --git a/misc/states.js b/misc/states.js
-index 6d98da8..da27024 100644
+index 5aac65d20c..81519d5317 100644
 --- a/misc/states.js
 +++ b/misc/states.js
 @@ -1,5 +1,17 @@
@@ -34,7 +34,7 @@ index 6d98da8..da27024 100644
  
          // Make sure the event we just bound ourselves to is actually fired.
          new states.Trigger({ selector: selector, state: state });
-@@ -177,7 +196,18 @@ states.Dependent.prototype = {
+@@ -177,7 +196,21 @@ states.Dependent.prototype = {
  
        // By adding "trigger: true", we ensure that state changes don't go into
        // infinite loops.
@@ -50,11 +50,14 @@ index 6d98da8..da27024 100644
 +        event.stopPropagation();
 +        this.element.trigger(event);
 +      }
-+      $(document).trigger({ type: 'state:' + this.state, value: value, trigger: true, states_target: this.element.get(0) });
++      // The element may have been removed from the DOM.
++      if (typeof this.element.get(0) !== 'undefined') {
++        $(document).trigger({ type: 'state:' + this.state, value: value, trigger: true, states_target: this.element.get(0) });
++      }
      }
    },
  
-@@ -342,14 +372,36 @@ states.Trigger.prototype = {
+@@ -342,14 +375,42 @@ states.Trigger.prototype = {
        var value = valueFn.call(this.element, e);
        // Only trigger the event if the value has actually changed.
        if (oldValue !== value) {
@@ -70,7 +73,10 @@ index 6d98da8..da27024 100644
 +          event.stopPropagation();
 +          this.element.trigger(event);
 +        }
-+        $(document).trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue, states_target: this.element.get(0) });
++        // The element may have been removed from the DOM.
++        if (typeof this.element.get(0) !== 'undefined') {
++          $(document).trigger({ type: 'state:' + this.state, value: value, oldValue: oldValue, states_target: this.element.get(0) });
++        }
          oldValue = value;
        }
      }, this));
@@ -89,11 +95,14 @@ index 6d98da8..da27024 100644
 +        event.stopPropagation();
 +        this.element.trigger(event);
 +      }
-+      $(document).trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null, states_target: this.element.get(0) });
++      // The element may have been removed from the DOM.
++      if (typeof this.element.get(0) !== 'undefined') {
++        $(document).trigger({ type: 'state:' + this.state, value: oldValue, oldValue: null, states_target: this.element.get(0) });
++      }
      }, this));
    }
  };
-@@ -480,6 +532,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -480,6 +541,7 @@ $(document).bind('state:disabled', function(e) {
    // Only act when this change was triggered by a dependency and not by the
    // element monitoring itself.
    if (e.trigger) {
@@ -101,15 +110,15 @@ index 6d98da8..da27024 100644
      $(e.target)
        .attr('disabled', e.value)
          .closest('.form-item, .form-submit, .form-wrapper').toggleClass('form-disabled', e.value)
-@@ -492,6 +492,7 @@ $(document).bind('state:disabled', function(e) {
+@@ -492,6 +554,7 @@ $(document).bind('state:disabled', function(e) {
  
  $(document).bind('state:required', function(e) {
    if (e.trigger) {
-+    e.target = e.states_target || e.target; 
++    e.target = e.states_target || e.target;
      if (e.value) {
        var $label = $(e.target).closest('.form-item, .form-wrapper').find('label');
        // Avoids duplicate required markers on initialization.
-@@ -503,18 +557,21 @@ $(document).bind('state:required', function(e) {
+@@ -507,18 +570,21 @@ $(document).bind('state:required', function(e) {
  
  $(document).bind('state:visible', function(e) {
    if (e.trigger) {
