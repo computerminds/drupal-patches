@@ -1,0 +1,36 @@
+diff --git a/includes/common.inc b/includes/common.inc
+index ad4e782..0133173 100644
+--- a/includes/common.inc
++++ b/includes/common.inc
+@@ -2507,6 +2507,9 @@ function drupal_attributes(array $attributes = array()) {
+  *     internal to the site, $options['language'] is used to determine whether
+  *     the link is "active", or pointing to the current page (the language as
+  *     well as the path must match). This element is also used by url().
++ *   - 'CM_WITHHOLD_ACTIVE_CLASS': If this option is passed and is truthy, no
++ *     "active" class will be added to the link even in cases where it normally
++ *     would. This is an extra option patched in by Computerminds.
+  *   - Additional $options elements used by the url() function.
+  *
+  * @return string
+@@ -2524,10 +2527,20 @@ function l($text, $path, array $options = array()) {
+     'html' => FALSE,
+   );
+ 
++  // <CM HACK>
++  // Extract our extra options.
++  $cm_withhold_active_class = !empty($options['CM_WITHHOLD_ACTIVE_CLASS']);
++  unset($options['CM_WITHHOLD_ACTIVE_CLASS']);
++  // </CM HACK>
++
+   // Append active class.
+   if (($path == $_GET['q'] || ($path == '<front>' && drupal_is_front_page())) &&
+       (empty($options['language']) || $options['language']->language == $language_url->language)) {
+-    $options['attributes']['class'][] = 'active';
++    // <CM HACK>
++    if (!$cm_withhold_active_class) {
++      $options['attributes']['class'][] = 'active';
++    }
++    // </CM HACK>
+   }
+ 
+   // Remove all HTML and PHP tags from a tooltip. For best performance, we act only
