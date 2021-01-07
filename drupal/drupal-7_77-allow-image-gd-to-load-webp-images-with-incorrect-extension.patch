@@ -1,0 +1,15 @@
+diff --git a/modules/system/image.gd.inc b/modules/system/image.gd.inc
+index 3d0797e424..ae7f847102 100644
+--- a/modules/system/image.gd.inc
++++ b/modules/system/image.gd.inc
+@@ -252,6 +252,10 @@ function image_gd_desaturate(stdClass $image) {
+  */
+ function image_gd_load(stdClass $image) {
+   $extension = str_replace('jpg', 'jpeg', $image->info['extension']);
++  // WebP images might not have the correct extension due to how we create them.
++  if (empty($extension) && isset($image->info['mime_type']) && $image->info['mime_type'] == 'image/webp') {
++    $extension = 'webp';
++  }
+   $function = 'imagecreatefrom' . $extension;
+   if (function_exists($function) && $image->resource = $function($image->source)) {
+     if (imageistruecolor($image->resource)) {
