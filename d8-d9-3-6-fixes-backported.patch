@@ -1,0 +1,37 @@
+diff --git a/core/lib/Drupal/Core/Form/FormBuilder.php b/core/lib/Drupal/Core/Form/FormBuilder.php
+index 6388b857c76..04cde336b1e 100644
+--- a/core/lib/Drupal/Core/Form/FormBuilder.php
++++ b/core/lib/Drupal/Core/Form/FormBuilder.php
+@@ -1217,7 +1217,7 @@ protected function handleInputElement($form_id, &$element, FormStateInterface &$
+     // #access=FALSE on an element usually allow access for some users, so forms
+     // submitted with self::submitForm() may bypass access restriction and be
+     // treated as high-privilege users instead.
+-    $process_input = empty($element['#disabled']) && (($form_state->isProgrammed() && $form_state->isBypassingProgrammedAccessChecks()) || ($form_state->isProcessingInput() && (!isset($element['#access']) || $element['#access'])));
++    $process_input = empty($element['#disabled']) && ($element['#type'] !== 'value') && (($form_state->isProgrammed() && $form_state->isBypassingProgrammedAccessChecks()) || ($form_state->isProcessingInput() && (!isset($element['#access']) || $element['#access'])));
+ 
+     // Set the element's #value property.
+     if (!isset($element['#value']) && !array_key_exists('#value', $element)) {
+diff --git a/core/modules/quickedit/src/MetadataGenerator.php b/core/modules/quickedit/src/MetadataGenerator.php
+index 174726fe132..a071512b5d6 100644
+--- a/core/modules/quickedit/src/MetadataGenerator.php
++++ b/core/modules/quickedit/src/MetadataGenerator.php
+@@ -5,6 +5,7 @@
+ use Drupal\Component\Plugin\PluginManagerInterface;
+ use Drupal\Core\Entity\EntityInterface;
+ use Drupal\Core\Field\FieldItemListInterface;
++use Drupal\Core\StringTranslation\TranslatableMarkup;
+ use Drupal\quickedit\Access\QuickEditEntityFieldAccessCheckInterface;
+ use Drupal\Core\Entity\Entity\EntityViewDisplay;
+ 
+@@ -55,7 +56,10 @@ public function __construct(QuickEditEntityFieldAccessCheckInterface $access_che
+    */
+   public function generateEntityMetadata(EntityInterface $entity) {
+     return [
+-      'label' => $entity->label(),
++      'label' => $entity->access('view label') ? $entity->label() : new TranslatableMarkup('@label @id', [
++        '@label' => $entity->getEntityType()->getSingularLabel(),
++        '@id' => $entity->id()
++      ])
+     ];
+   }
+ 
