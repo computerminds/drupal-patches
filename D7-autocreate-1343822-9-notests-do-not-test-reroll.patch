@@ -1,0 +1,20 @@
+diff --git a/modules/taxonomy/taxonomy.module b/modules/taxonomy/taxonomy.module
+index d94e165..46a4e18 100644
+--- a/modules/taxonomy/taxonomy.module
++++ b/modules/taxonomy/taxonomy.module
+@@ -1902,6 +1902,15 @@ function taxonomy_rdf_mapping() {
+ function taxonomy_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+   foreach ($items as $delta => $item) {
+     if ($item['tid'] === 'autocreate') {
++      // Avoid duplicating tags within the same vocabulary.
++      $tid = db_query_range("SELECT tid FROM {taxonomy_term_data} WHERE name = :name AND vid = :vid", 0, 1, array(
++        ':name' => trim($item['name']),
++        ':vid' => $item['vid'],
++      ))->fetchField();
++      if (!empty($tid)) {
++        $items[$delta]['tid'] = $tid;
++        continue;
++      }
+       $term = (object) $item;
+       unset($term->tid);
+       taxonomy_term_save($term);
